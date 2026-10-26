@@ -200,25 +200,21 @@ Item {
     audioOutput: AudioOutput { volume: 0.4 }
   }
 
-  // Un reproductor por sonido ambiente; sin volumen no carga el archivo.
+  // Un reproductor sin cortes por sonido ambiente; sin volumen no carga el archivo.
   Instantiator {
     model: root.sonidosAmbiente
 
-    delegate: MediaPlayer {
+    delegate: SonidoSinCortes {
       required property var modelData
-      readonly property int volumen: root.mezcla[modelData.id] || 0
-      readonly property bool conVolumen: volumen > 0
-      readonly property bool debeSonar: root.ambienteActivo && conVolumen
+      readonly property int nivel: root.mezcla[modelData.id] || 0
+      readonly property bool conVolumen: nivel > 0
 
-      // Depende de `conVolumen` y no de `volumen`: reasignar la misma URL hace que
+      // Depende de `conVolumen` y no del nivel: reasignar la misma URL hace que
       // MediaPlayer recargue el archivo y se detenga, y eso pasaba en cada
       // movimiento del slider. Un bool solo avisa cuando cambia de verdad.
-      source: conVolumen ? Qt.resolvedUrl("sounds/" + modelData.archivo) : ""
-      loops: MediaPlayer.Infinite
-      audioOutput: AudioOutput { volume: volumen / 100 }
-
-      onDebeSonarChanged: debeSonar ? play() : pause()
-      onSourceChanged: if (debeSonar) play()
+      fuente: conVolumen ? Qt.resolvedUrl("sounds/" + modelData.archivo) : ""
+      volumen: nivel / 100
+      reproduciendo: root.ambienteActivo && conVolumen
     }
   }
 

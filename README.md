@@ -89,14 +89,13 @@ El shell recarga el widget al cambiar los archivos, pero el servicio
 | `BarWidget.qml` | La vista de la barra (una por monitor) |
 | `Panel.qml` | El panel; los sonidos con la vista del mezclador de la web |
 | `AnilloDoro.qml` | El logo de Doro dibujado con los colores del tema |
+| `SonidoSinCortes.qml` | Un sonido ambiente en bucle sin cortes (dos reproductores desfasados con crossfade) |
 | `Model.js` | La lógica pura del reloj, la misma de `timerStore` |
 
 ## Pendiente
 
 - Entrar a una sala de Doro y sincronizar el reloj (Supabase Realtime).
 - Guardar los pomodoros terminados en las estadísticas de la cuenta.
-- Bucle sin cortes en los sonidos ambiente (la web hace un crossfade; acá
-  `MediaPlayer` repite el archivo).
 - Licencia: el repo de la web no tiene, hay que definirla con el desarrollador.
 - Antes de publicar: confirmar el id `page.doro.pomodoro` (no se puede cambiar
   después) y sumar un `preview.png`.
