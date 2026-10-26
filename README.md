@@ -28,7 +28,16 @@ El repo es privado por ahora: `omarchy plugin add` lo clona con tu sesión de
 GitHub (`gh auth login`).
 
 ```sh
-omarchy plugin add https://github.com/daniace/doro-omarchy --enable
+omarchy plugin add https://github.com/daniace/doro-omarchy
+```
+
+Desde una terminal, Omarchy pregunta si habilitarlo y en qué parte de la barra
+ponerlo (izquierda, centro o derecha); viene marcado al lado del reloj
+(`defaultSection` del manifest). Con `--yes` no pregunta y usa esa ubicación.
+Para moverlo después:
+
+```sh
+omarchy bar move page.doro.pomodoro --section right   # left | centerBegin | center | centerEnd | tray | right
 ```
 
 ## Atajos y scripts (IPC)
@@ -65,7 +74,7 @@ plugin madura; no toca el repo de la web. La lógica replica `src/store/timerSto
 `public/sounds` y `src/assets/sounds`: si cambian allá, hay que traerlos.
 
 ```sh
-scripts/instalar-local.sh   # instala y habilita desde esta copia
+scripts/instalar-local.sh   # instala desde esta copia; la primera vez pregunta dónde va en la barra
 node tests/model.test.mjs   # pruebas de la lógica del reloj
 qs log -p "$OMARCHY_PATH/shell" --tail 100
 ```
