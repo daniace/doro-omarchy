@@ -101,6 +101,20 @@ function aviso(modoTerminado) {
 }
 
 /**
+ * El logo de Doro (`public/doro.svg`) en un color dado, para el ícono del aviso.
+ * Las notificaciones de Omarchy muestran la imagen tal cual, sin teñirla con el
+ * tema, así que el color viene ya puesto: `rgb` de 0 a 255 y `opacidad` de 0 a 1.
+ */
+function svgLogo(r, g, b, opacidad) {
+  var trazo = "rgb(" + Math.round(r) + "," + Math.round(g) + "," + Math.round(b) + ")"
+  return '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="' + trazo + '"' +
+    ' stroke-opacity="' + opacidad + '" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">\n' +
+    '  <path d="M5.636 5.636a9 9 0 1 1 12.728 12.728a9 9 0 0 1 -12.728 -12.728z" />\n' +
+    '  <path d="M16.243 7.757a6 6 0 0 0 -8.486 0" />\n' +
+    '</svg>\n'
+}
+
+/**
  * Lee el estado guardado y lo sanea. Como la web al rehidratar, nunca reanuda un
  * reloj que había quedado corriendo: vuelve en pausa con el tiempo que tenía.
  */

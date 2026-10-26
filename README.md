@@ -51,6 +51,7 @@ omarchy-shell page.doro.pomodoro volumen rain 40 # 0 lo apaga
 omarchy-shell page.doro.pomodoro ambiente        # pausar / reanudar los sonidos
 omarchy-shell page.doro.pomodoro panel           # abrir / cerrar el panel
 omarchy-shell page.doro.pomodoro estado          # JSON con la fase y el tiempo
+omarchy-shell page.doro.pomodoro probarAviso     # el aviso y la alarma de fin de pomodoro
 ```
 
 Por ejemplo, en `~/.config/hypr/bindings.conf`:
@@ -63,7 +64,8 @@ bindd = SUPER ALT, P, Doro: arrancar o pausar, exec, omarchy-shell page.doro.pom
 
 - Corre dentro del proceso de `omarchy-shell`, sin servicios propios ni permisos extra.
 - Sonido con QtMultimedia (`qt6-multimedia`, viene con Omarchy).
-- Avisos con `omarchy-notification-send`.
+- Avisos con `omarchy-notification-send`, con el logo de Doro en el color del tema
+  (`~/.local/state/doro/icono-aviso.svg`, que se reescribe al cambiar de tema).
 - Escribe solo en `~/.local/state/doro/`.
 
 ## Desarrollo

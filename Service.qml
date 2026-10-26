@@ -175,7 +175,27 @@ Item {
 
   function avisar(terminado) {
     var aviso = Model.aviso(terminado)
-    Quickshell.execDetached(["omarchy-notification-send", aviso.titulo, aviso.cuerpo])
+    Quickshell.execDetached(["omarchy-notification-send", "--app-name", "Doro", "--image", rutaIconoAviso,
+      aviso.titulo, aviso.cuerpo])
+  }
+
+  // ---- El ícono del aviso: el logo de Doro en el color del texto de las
+  //      notificaciones del tema. Omarchy no tiñe una imagen pasada por ruta,
+  //      así que se escribe con el color puesto y se reescribe al cambiar de tema.
+  readonly property string rutaIconoAviso: carpetaEstado + "/icono-aviso.svg"
+  readonly property color colorAviso: Color.notifications.text
+
+  function escribirIconoAviso() {
+    iconoAviso.setText(Model.svgLogo(colorAviso.r * 255, colorAviso.g * 255, colorAviso.b * 255, colorAviso.a))
+  }
+
+  onColorAvisoChanged: if (cargado) escribirIconoAviso()
+
+  FileView {
+    id: iconoAviso
+    path: root.rutaIconoAviso
+    atomicWrites: true
+    printErrors: false
   }
 
   Timer {
@@ -260,7 +280,10 @@ Item {
   Process {
     id: crearCarpeta
     command: ["mkdir", "-p", root.carpetaEstado]
-    onExited: archivo.reload()
+    onExited: {
+      archivo.reload()
+      root.escribirIconoAviso()
+    }
   }
 
   Component.onCompleted: crearCarpeta.running = true
@@ -284,6 +307,8 @@ Item {
     function siguienteModo(): void { root.siguienteModo() }
     function modo(nuevo: string): void { root.establecerModo(nuevo) }
     function ambiente(): void { root.alternarAmbiente() }
+    // El aviso y la alarma de fin de pomodoro, sin tocar el reloj.
+    function probarAviso(): void { root.sonar(alarma); root.avisar("pomodoro") }
     function volumen(id: string, valor: int): void { root.establecerVolumen(id, valor) }
     function estado(): string {
       return JSON.stringify({ modo: root.modo, estaActivo: root.estaActivo, tiempoRestante: root.tiempoRestante, texto: root.texto })
