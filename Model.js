@@ -6,7 +6,7 @@
 // `src/features/timer/hooks/useTimerActions.ts`). Los VALORES de `modo` y las
 // CLAVES de la configuración quedan en inglés por el mismo motivo que allá: se
 // indexan entre sí (`configuracion[modo]`) y son el contrato de `timer_state`,
-// así que una futura sincronización con las salas no tiene que traducir nada.
+// así que la sincronización con las salas no tiene que traducir nada.
 
 var MODOS = ["pomodoro", "shortBreak", "longBreak", "stopwatch"]
 
@@ -114,6 +114,109 @@ function svgLogo(r, g, b, opacidad) {
     '</svg>\n'
 }
 
+// ---- Salas: el reloj compartido en `rooms.timer_state` (`EstadoReloj` de la web).
+
+// Una fase remota que terminó hace más que esto no la cerró nadie a tiempo.
+var MARGEN_VENCIDO_MS = 3000
+
+var RE_UUID =/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+
+function esUuid(texto) {
+  return typeof texto === "string" && RE_UUID.test(texto)
+}
+
+/**
+ * Lo que se pega para entrar a una sala: el link de invitación (`/invitacion/CODE`)
+ * o el código suelto dan `{ codigo }`, como `parsearInvitacion` de la web; el
+ * link de la sala (`/room/<uuid>`) o su id dan `{ salaId }`. null si no sirve.
+ */
+function parsearSala(texto) {
+  var crudo = String(texto || "").trim()
+  var sala = crudo.match(/\/room\/([0-9a-f-]{36})/i)
+  if (sala && esUuid(sala[1])) return { salaId: sala[1].toLowerCase() }
+  if (esUuid(crudo)) return { salaId: crudo.toLowerCase() }
+  var invitacion = crudo.match(/\/invitacion\/([a-z0-9]+)/i)
+  if (invitacion) return { codigo: invitacion[1].toUpperCase() }
+  var codigo = crudo.replace(/\s+/g, "").toUpperCase()
+  if (codigo.length < 4 || !/^[A-Z0-9]+$/.test(codigo)) return null
+  return { codigo: codigo }
+}
+
+/** ¿Cumple el contrato `EstadoReloj`? (`esEstadoRelojValido` de la web). */
+function esEstadoReloj(valor) {
+  return valor !== null && typeof valor === "object" &&
+    typeof valor.tiempoRestante === "number" && isFinite(valor.tiempoRestante) &&
+    valor.tiempoRestante >= 0 && valor.tiempoRestante <= MAX_SEGUNDOS_VALIDOS &&
+    typeof valor.estaActivo === "boolean" && esModo(valor.modo)
+}
+
+function configuracionDe(valor, respaldo) {
+  if (!valor || typeof valor !== "object") return respaldo
+  var configuracion = {}
+  for (var clave in MAXIMOS)
+    configuracion[clave] = valor[clave] !== undefined ? acotarMinutos(clave, valor[clave]) : respaldo[clave]
+  configuracion.autoBreak = typeof valor.autoBreak === "boolean" ? valor.autoBreak : respaldo.autoBreak
+  return configuracion
+}
+
+/**
+ * El estado a subir. Con el reloj corriendo, `actualizadoEn` se corre al segundo
+ * exacto del ancla: así `tiempoRestante` va entero y los demás calculan el mismo
+ * fin (o inicio del cronómetro) que este reloj, sin el redondeo de hasta un segundo.
+ */
+function estadoParaSubir(local, ahora) {
+  var tiempoRestante = local.tiempoRestante
+  var referencia = ahora
+  if (local.estaActivo && local.modo === "stopwatch") {
+    tiempoRestante = Math.max(0, Math.floor((ahora - local.tiempoInicioCronometro) / 1000))
+    referencia = local.tiempoInicioCronometro + tiempoRestante * 1000
+  } else if (local.estaActivo) {
+    tiempoRestante = Math.max(0, Math.ceil((local.tiempoFinObjetivo - ahora) / 1000))
+    referencia = local.tiempoFinObjetivo - tiempoRestante * 1000
+  }
+  return {
+    tiempoRestante: tiempoRestante,
+    estaActivo: local.estaActivo,
+    modo: local.modo,
+    configuracion: local.configuracion,
+    actualizadoEn: new Date(referencia).toISOString()
+  }
+}
+
+/**
+ * Aplica un estado remoto (`establecerEstadoTemporizador` de la web): las anclas
+ * salen de `actualizadoEn` + `tiempoRestante`, iguales en todos los clientes.
+ * `vencido`: venía corriendo y su fin ya pasó (nadie estaba para cerrar la fase).
+ */
+function aplicarRemoto(remoto, configuracionLocal, ahora) {
+  var referencia = Date.parse(remoto.actualizadoEn)
+  if (!isFinite(referencia)) referencia = ahora
+  var configuracion = configuracionDe(remoto.configuracion, configuracionLocal)
+  var estado = {
+    modo: remoto.modo,
+    configuracion: configuracion,
+    tiempoInicial: duracionModo(remoto.modo, configuracion),
+    tiempoRestante: Math.round(remoto.tiempoRestante),
+    estaActivo: false,
+    tiempoFinObjetivo: 0,
+    tiempoInicioCronometro: 0,
+    vencido: false
+  }
+  if (!remoto.estaActivo) return estado
+
+  estado.estaActivo = true
+  if (remoto.modo === "stopwatch") {
+    estado.tiempoInicioCronometro = referencia - remoto.tiempoRestante * 1000
+    estado.tiempoRestante = Math.min(MAX_SEGUNDOS_VALIDOS, Math.max(0, Math.floor((ahora - estado.tiempoInicioCronometro) / 1000)))
+  } else {
+    estado.tiempoFinObjetivo = referencia + remoto.tiempoRestante * 1000
+    estado.tiempoRestante = Math.max(0, Math.ceil((estado.tiempoFinObjetivo - ahora) / 1000))
+    // Recién terminada, la cierra este reloj como cualquier fase (alarma y pomodoro).
+    estado.vencido = estado.tiempoFinObjetivo < ahora - MARGEN_VENCIDO_MS
+  }
+  return estado
+}
+
 /**
  * Lee el estado guardado y lo sanea. Como la web al rehidratar, nunca reanuda un
  * reloj que había quedado corriendo: vuelve en pausa con el tiempo que tenía.
@@ -151,11 +254,17 @@ function estadoGuardado(texto) {
     if (volumen > 0) mezcla[id] = Math.min(100, Math.round(volumen))
   }
 
+  // La sala en la que se estaba: al volver se reengancha.
+  var sala = null
+  if (datos.sala && esUuid(datos.sala.id))
+    sala = { id: datos.sala.id, codigo: typeof datos.sala.codigo === "string" ? datos.sala.codigo : "" }
+
   return {
     configuracion: configuracion,
     modo: modo,
     tiempoInicial: tiempoInicial,
     tiempoRestante: Math.round(tiempoRestante),
-    mezcla: mezcla
+    mezcla: mezcla,
+    sala: sala
   }
 }

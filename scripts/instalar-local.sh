@@ -11,7 +11,7 @@ repo="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 destino="$HOME/.config/omarchy/plugins/$id"
 
 mkdir -p "$destino"
-rsync -a --delete --exclude .git --exclude .github "$repo/" "$destino/"
+rsync -a --delete --delete-excluded --exclude .git --exclude .github --exclude .claude --exclude .agents "$repo/" "$destino/"
 omarchy plugin validate "$destino"
 
 # Lugar en la barra, la primera vez: la misma pregunta que hace `omarchy plugin

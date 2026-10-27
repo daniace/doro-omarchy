@@ -18,6 +18,7 @@ BarWidget {
     : null
 
   readonly property bool muestraTiempo: !vertical && reloj !== null && !reloj.sinEmpezar
+  readonly property bool enSala: reloj !== null && reloj.sala.salaId !== ""
 
   // ---- Panel. Contrato de shell.summon/hide/toggle: Bar.findPanelWidget pide
   //      open/close/opened en la raíz del widget.
@@ -76,7 +77,7 @@ BarWidget {
     fixedHeight: root.vertical ? Style.bar.iconSlot : -1
     horizontalMargin: 8.75
     tooltipText: root.reloj
-      ? root.reloj.etiquetaModo + (root.reloj.estaActivo ? "" : " · en pausa")
+      ? root.reloj.etiquetaModo + (root.reloj.estaActivo ? "" : " · en pausa") + (root.enSala ? " · en sala" : "")
       : "Doro"
 
     onPressed: function(b) {
@@ -109,6 +110,17 @@ BarWidget {
         font.family: button.fontFamily
         font.pixelSize: button.fontSize
         font.features: { "tnum": 1 }
+        renderType: Text.NativeRendering
+      }
+
+      // En una sala: el reloj es compartido.
+      Text {
+        visible: root.enSala && !root.vertical
+        anchors.verticalCenter: parent.verticalCenter
+        text: "\u{f0849}"
+        color: Color.accent
+        font.family: button.fontFamily
+        font.pixelSize: Math.round(button.fontSize * 0.85)
         renderType: Text.NativeRendering
       }
     }

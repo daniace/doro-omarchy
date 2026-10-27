@@ -66,6 +66,7 @@ Item {
       tiempoFinObjetivo = Date.now() + tiempoRestante * 1000
     }
     estaActivo = true
+    cambioLocal()
   }
 
   function pausar() {
@@ -75,6 +76,7 @@ Item {
     tiempoFinObjetivo = 0
     tiempoInicioCronometro = 0
     guardar()
+    cambioLocal()
   }
 
   // Igual que `manejarReinicio` de la web: el cronómetro vuelve a 0 y el
@@ -85,6 +87,7 @@ Item {
       tiempoInicioCronometro = 0
       tiempoRestante = 0
       guardar()
+      cambioLocal()
     } else {
       establecerModo("pomodoro")
     }
@@ -99,6 +102,7 @@ Item {
     tiempoInicial = Model.duracionModo(nuevo, configuracion)
     tiempoRestante = tiempoInicial
     guardar()
+    cambioLocal()
   }
 
   function siguienteModo() { establecerModo(Model.modoSiguiente(modo)) }
@@ -126,6 +130,7 @@ Item {
       tiempoRestante = tiempoInicial
     }
     guardar()
+    cambioLocal()
   }
 
   function establecerVolumen(id, valor) {
@@ -164,6 +169,8 @@ Item {
     tiempoRestante = 0
     sonar(alarma)
     avisar(terminado)
+    // Como la web: cuenta el pomodoro con sus minutos configurados (los descansos no).
+    if (terminado === "pomodoro") nube.registrarPomodoro(configuracion.pomodoro)
     establecerModo(Model.modoAlTerminar(terminado))
     if (configuracion.autoBreak) iniciar()
   }
@@ -175,8 +182,70 @@ Item {
 
   function avisar(terminado) {
     var aviso = Model.aviso(terminado)
+    notificar(aviso.titulo, aviso.cuerpo)
+  }
+
+  function notificar(titulo, cuerpo) {
     Quickshell.execDetached(["omarchy-notification-send", "--app-name", "Doro", "--image", rutaIconoAviso,
-      aviso.titulo, aviso.cuerpo])
+      titulo, cuerpo])
+  }
+
+  // ---- doro.page: la sesión, los pomodoros del dashboard y el resumen.
+  property alias nube: nube
+
+  Nube {
+    id: nube
+    carpetaEstado: root.carpetaEstado
+    onAviso: function(titulo, cuerpo) { root.notificar(titulo, cuerpo) }
+  }
+
+  // ---- La sala: el reloj compartido. Cada acción local se sube (agrupadas: una
+  //      acción puede llamar a otras) y lo remoto se aplica sin volver a subirse.
+  property alias sala: sala
+  property bool aplicandoRemoto: false
+
+  Sala {
+    id: sala
+    nube: nube
+    onEstadoRecibido: function(estado) { root.aplicarRemoto(estado) }
+    onAviso: function(titulo, cuerpo) { root.notificar(titulo, cuerpo) }
+    onCambio: root.guardar()
+  }
+
+  function cambioLocal() {
+    if (cargado && !aplicandoRemoto && sala.unida) subida.restart()
+  }
+
+  function estadoLocal() {
+    return Model.estadoParaSubir({
+      tiempoRestante: tiempoRestante, estaActivo: estaActivo, modo: modo, configuracion: configuracion,
+      tiempoFinObjetivo: tiempoFinObjetivo, tiempoInicioCronometro: tiempoInicioCronometro
+    }, Date.now())
+  }
+
+  Timer {
+    id: subida
+    interval: 50
+    onTriggered: root.sala.subir(root.estadoLocal())
+  }
+
+  function crearSala() { sala.crear(estadoLocal()) }
+
+  function aplicarRemoto(remoto) {
+    var estado = Model.aplicarRemoto(remoto, configuracion, Date.now())
+    aplicandoRemoto = true
+    configuracion = estado.configuracion
+    modo = estado.modo
+    tiempoInicial = estado.tiempoInicial
+    tiempoFinObjetivo = estado.vencido ? 0 : estado.tiempoFinObjetivo
+    tiempoInicioCronometro = estado.tiempoInicioCronometro
+    tiempoRestante = estado.vencido ? 0 : estado.tiempoRestante
+    estaActivo = estado.estaActivo && !estado.vencido
+    aplicandoRemoto = false
+    guardar()
+    // Una fase que terminó sin nadie que la cerrara pasa a la siguiente, sin
+    // alarma ni pomodoro: no la hizo este reloj.
+    if (estado.vencido) establecerModo(Model.modoAlTerminar(estado.modo))
   }
 
   // ---- El ícono del aviso: el logo de Doro en el color del texto de las
@@ -253,7 +322,8 @@ Item {
         configuracion: root.configuracion,
         modo: root.modo,
         tiempoRestante: root.tiempoRestante,
-        mezcla: root.mezcla
+        mezcla: root.mezcla,
+        sala: root.sala.salaId ? { id: root.sala.salaId, codigo: root.sala.codigo } : null
       }, null, 2) + "\n")
     }
   }
@@ -266,6 +336,8 @@ Item {
     tiempoRestante = estado.tiempoRestante
     mezcla = estado.mezcla
     cargado = true
+    // Como la web al volver a la sala: se reengancha y el estado de la sala manda.
+    if (estado.sala && !sala.salaId) sala.entrar(estado.sala.id, estado.sala.codigo)
   }
 
   FileView {
@@ -283,6 +355,7 @@ Item {
     onExited: {
       archivo.reload()
       root.escribirIconoAviso()
+      nube.cargar()
     }
   }
 
@@ -311,8 +384,21 @@ Item {
     function probarAviso(): void { root.sonar(alarma); root.avisar("pomodoro") }
     function volumen(id: string, valor: int): void { root.establecerVolumen(id, valor) }
     function estado(): string {
-      return JSON.stringify({ modo: root.modo, estaActivo: root.estaActivo, tiempoRestante: root.tiempoRestante, texto: root.texto })
+      return JSON.stringify({ modo: root.modo, estaActivo: root.estaActivo, tiempoRestante: root.tiempoRestante, texto: root.texto,
+        usuario: nube.usuario, pendientes: nube.pendientes.length, conectado: nube.configurada,
+        sala: sala.salaId ? { id: sala.salaId, codigo: sala.codigo, link: sala.link, unida: sala.unida, enVivo: sala.enVivo } : null })
     }
+    // Salas: `unirse <link o código>`, `crearSala` (copia el link), `copiarLink`, `salirSala`.
+    function unirse(texto: string): void { sala.unirse(texto) }
+    function crearSala(): void { root.crearSala() }
+    function copiarLink(): void { sala.copiarLink() }
+    function salirSala(): void { sala.salir() }
+    // doro.page: `entrar google|github|discord`, `salir`, y `sesion <url>`, que
+    // es la vuelta del navegador por `doro://auth`.
+    function entrar(proveedor: string): void { nube.entrar(proveedor) }
+    function salir(): void { nube.salir() }
+    function sesion(url: string): void { nube.recibirRetorno(url) }
+    function dashboard(): void { nube.abrirDashboard() }
     function abrir(): void { root.invocarVista("summon") }
     function cerrar(): void { root.invocarVista("hide") }
     function panel(): void { root.invocarVista("toggle") }

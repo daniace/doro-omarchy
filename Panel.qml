@@ -18,7 +18,7 @@ Panel {
   property var reloj: null
   readonly property var barIdentity: hostWidget || root
 
-  // "" | "tiempos" | "sonidos"
+  // "" | "tiempos" | "sonidos" | "sala"
   property string seccion: ""
 
   // ---- Sonidos (la vista del mezclador de la web, `MusicPlayer.tsx`)
@@ -49,6 +49,10 @@ Panel {
   readonly property color linea: Qt.rgba(texto.r, texto.g, texto.b, 0.15)
   readonly property color acento: Color.accent
   readonly property string fuente: bar ? bar.fontFamily : Style.font.family
+
+  readonly property var nube: reloj ? reloj.nube : null
+  readonly property var sala: reloj ? reloj.sala : null
+  onOpenedChanged: if (opened && nube) nube.cargarResumen()
 
   function open() { root.controller.show() }
   function close() { root.controller.hide() }
@@ -242,6 +246,17 @@ Panel {
             hoverColor: root.seccion === "tiempos" ? root.acento : root.texto
             fontFamily: root.fuente
             onClicked: root.alternarSeccion("tiempos")
+          }
+
+          PanelActionButton {
+            visible: root.nube !== null && root.nube.configurada
+            anchors.verticalCenter: parent.verticalCenter
+            iconText: "\u{f0849}"
+            tooltipText: root.sala && root.sala.salaId ? "Sala compartida" : "Estudiar con otros"
+            foreground: root.seccion === "sala" || (root.sala && root.sala.salaId) ? root.acento : root.apagado
+            hoverColor: root.seccion === "sala" ? root.acento : root.texto
+            fontFamily: root.fuente
+            onClicked: root.alternarSeccion("sala")
           }
 
           PanelActionButton {
@@ -541,6 +556,227 @@ Panel {
               hoverEnabled: true
               cursorShape: Qt.PointingHandCursor
               onClicked: root.verTodos = true
+            }
+          }
+        }
+
+        // ---- Sala: fuera de una, pegar una invitación o crear una; adentro, el
+        //      link para compartir y salir. El reloj de arriba pasa a ser el de todos.
+        Column {
+          visible: root.seccion === "sala" && root.sala !== null
+          width: parent.width
+          spacing: Style.space(8)
+
+          readonly property bool enSala: root.sala !== null && root.sala.salaId !== ""
+
+          Text {
+            width: parent.width
+            text: !parent.enSala ? "Pegá el link o el código de una invitación, o creá una sala y compartí su link."
+              : !root.sala.unida ? "Conectando con la sala…"
+              : "Cualquiera en la sala mueve este reloj." + (root.sala.enVivo ? "" : " (Se actualiza cada 2 segundos.)")
+            color: root.apagado
+            font.family: root.fuente
+            font.pixelSize: Style.font.caption
+            wrapMode: Text.WordWrap
+          }
+
+          Row {
+            visible: !parent.enSala
+            width: parent.width
+            spacing: Style.space(6)
+
+            TextField {
+              id: campoInvitacion
+              width: parent.width - botonUnirse.width - parent.spacing
+              placeholderText: "doro.page/invitacion/…"
+              foreground: root.texto
+              accent: root.acento
+              onAccepted: botonUnirse.unirse()
+            }
+
+            PanelActionButton {
+              id: botonUnirse
+              anchors.verticalCenter: parent.verticalCenter
+              iconText: "\u{f0142}"
+              tooltipText: "Unirse"
+              foreground: campoInvitacion.text.trim() ? root.acento : root.apagado
+              hoverColor: root.texto
+              fontFamily: root.fuente
+              function unirse() {
+                if (!campoInvitacion.text.trim()) return
+                root.sala.unirse(campoInvitacion.text)
+                campoInvitacion.text = ""
+              }
+              onClicked: unirse()
+            }
+          }
+
+          Text {
+            visible: !parent.enSala
+            text: "Crear una sala"
+            color: zonaCrearSala.containsMouse ? root.texto : root.acento
+            font.family: root.fuente
+            font.pixelSize: Style.font.bodySmall
+
+            MouseArea {
+              id: zonaCrearSala
+              anchors.fill: parent
+              anchors.margins: -Style.space(6)
+              hoverEnabled: true
+              cursorShape: Qt.PointingHandCursor
+              onClicked: root.reloj.crearSala()
+            }
+          }
+
+          Item {
+            visible: parent.enSala
+            width: parent.width
+            height: Style.space(32)
+
+            Text {
+              anchors.left: parent.left
+              anchors.right: accionesSala.left
+              anchors.verticalCenter: parent.verticalCenter
+              text: root.sala && root.sala.codigo ? "Sala " + root.sala.codigo : "Sala"
+              color: root.texto
+              font.family: root.fuente
+              font.pixelSize: Style.font.body
+              elide: Text.ElideRight
+            }
+
+            Row {
+              id: accionesSala
+              anchors.right: parent.right
+              anchors.verticalCenter: parent.verticalCenter
+              spacing: Style.space(2)
+
+              PanelActionButton {
+                visible: root.sala !== null && root.sala.link !== ""
+                iconText: "\u{f0337}"
+                tooltipText: "Copiar el link de invitación"
+                foreground: root.apagado
+                hoverColor: root.texto
+                fontFamily: root.fuente
+                fontSize: Style.font.body
+                onClicked: root.sala.copiarLink()
+              }
+
+              PanelActionButton {
+                iconText: "\u{f0343}"
+                tooltipText: "Salir de la sala"
+                foreground: root.apagado
+                hoverColor: root.texto
+                fontFamily: root.fuente
+                fontSize: Style.font.body
+                onClicked: root.sala.salir()
+              }
+            }
+          }
+        }
+
+        // ---- doro.page: lo de hoy, la racha, el dashboard y la cuenta.
+        Column {
+          visible: root.nube !== null && root.nube.configurada
+          width: parent.width
+          spacing: Style.space(2)
+
+          Rectangle {
+            width: parent.width
+            height: 1
+            color: root.linea
+          }
+
+          Item {
+            width: parent.width
+            height: Style.space(36)
+
+            Text {
+              anchors.left: parent.left
+              anchors.right: botonDashboard.left
+              anchors.verticalCenter: parent.verticalCenter
+              text: {
+                var r = root.nube ? root.nube.resumen : null
+                if (!r) return "Tus pomodoros van al dashboard"
+                return "Hoy " + r.hoy + " min · racha de " + r.racha + (r.racha === 1 ? " día" : " días")
+              }
+              color: root.nube && root.nube.resumen ? root.texto : root.apagado
+              font.family: root.fuente
+              font.pixelSize: Style.font.bodySmall
+              elide: Text.ElideRight
+            }
+
+            PanelActionButton {
+              id: botonDashboard
+              anchors.right: parent.right
+              anchors.verticalCenter: parent.verticalCenter
+              iconText: "\u{f0128}"
+              tooltipText: "Ver el dashboard"
+              foreground: root.apagado
+              hoverColor: root.texto
+              fontFamily: root.fuente
+              fontSize: Style.font.body
+              onClicked: root.nube.abrirDashboard()
+            }
+          }
+
+          Item {
+            readonly property var usuario: root.nube ? root.nube.usuario : null
+            readonly property bool conCuenta: usuario !== null && !usuario.anonimo
+            width: parent.width
+            height: Style.space(32)
+
+            Text {
+              anchors.left: parent.left
+              anchors.verticalCenter: parent.verticalCenter
+              text: parent.conCuenta ? (parent.usuario.nombre || "Con tu cuenta") : "Entrar con"
+              color: root.apagado
+              font.family: root.fuente
+              font.pixelSize: Style.font.caption
+            }
+
+            Text {
+              visible: parent.conCuenta
+              anchors.right: parent.right
+              anchors.verticalCenter: parent.verticalCenter
+              text: "Salir"
+              color: zonaSalir.containsMouse ? root.texto : root.acento
+              font.family: root.fuente
+              font.pixelSize: Style.font.bodySmall
+
+              MouseArea {
+                id: zonaSalir
+                anchors.fill: parent
+                anchors.margins: -Style.space(6)
+                hoverEnabled: true
+                cursorShape: Qt.PointingHandCursor
+                onClicked: root.nube.salir()
+              }
+            }
+
+            Row {
+              visible: !parent.conCuenta
+              anchors.right: parent.right
+              anchors.verticalCenter: parent.verticalCenter
+              spacing: Style.space(2)
+
+              Repeater {
+                model: [
+                  { id: "google", nombre: "Google", icono: "\u{f02ad}" },
+                  { id: "github", nombre: "GitHub", icono: "\u{f02a4}" },
+                  { id: "discord", nombre: "Discord", icono: "\u{f066f}" }
+                ]
+
+                PanelActionButton {
+                  required property var modelData
+                  iconText: modelData.icono
+                  tooltipText: "Entrar con " + modelData.nombre
+                  foreground: root.apagado
+                  hoverColor: root.texto
+                  fontFamily: root.fuente
+                  fontSize: Style.font.body
+                  onClicked: root.nube.entrar(modelData.id)
+                }
+              }
             }
           }
         }

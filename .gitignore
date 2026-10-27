@@ -1,3 +1,6 @@
 node_modules/
 *.qmlc
 .qmlls.ini
+.env
+.env.*
+!.env.example

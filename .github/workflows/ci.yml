@@ -24,4 +24,6 @@ jobs:
           test -z "$(find . -path ./.git -prune -o -type l -print)"
 
       - name: Probar la lógica del reloj
-        run: node tests/model.test.mjs
+        run: |
+          node tests/model.test.mjs
+          node tests/supabase.test.mjs
