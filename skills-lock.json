@@ -1,0 +1,17 @@
+{
+  "version": 1,
+  "skills": {
+    "qt-qml": {
+      "source": "theqtcompanyrnd/agent-skills",
+      "sourceType": "github",
+      "skillPath": "skills/qt-qml/SKILL.md",
+      "computedHash": "47125bf78db12798e1bf3dcf77d6b65c58aa4efc6b9e0b445a43d36986a938f0"
+    },
+    "supabase": {
+      "source": "supabase/agent-skills",
+      "sourceType": "github",
+      "skillPath": "skills/supabase/SKILL.md",
+      "computedHash": "211141fd078b4b3645803868528d54221bc7755d24d5c8af45a366785c151dba"
+    }
+  }
+}

@@ -1,0 +1,11 @@
+# deepsec parse-failure debug dump
+# phase: revalidate
+# agentType: claude-agent-sdk
+# timestamp: 2026-10-27T18:55:40.663Z
+# error: Error: Agent produced revalidation output that wasn't parseable JSON: Unexpected token 'Y', "You've hit"... is not valid JSON. Tolerant jsonrepair failed: Unexpected character "'" at position 3. First 400 chars: You've hit your session limit · resets 5:20pm (America/Argentina/Catamarca)
+# batch (3 files):
+  - Supabase.js
+  - Model.js
+  - .github/workflows/ci.yml
+# --- raw agent output begins on next line ---
+You've hit your session limit · resets 5:20pm (America/Argentina/Catamarca)
