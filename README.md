@@ -190,7 +190,7 @@ bindd = SUPER ALT, P, Doro: start or pause, exec, omarchy-shell doro.pomodoro to
 | Area      | Technology                                                       |
 | --------- | ---------------------------------------------------------------- |
 | UI        | QML / Qt Quick on Quickshell (`omarchy-shell`), Omarchy UI kit    |
-| Sound     | QtMultimedia, two offset players per sound for gapless loops      |
+| Sound     | QtMultimedia, two players per sound taking turns with a crossfade |
 | Backend   | Supabase (PostgreSQL + Auth + Realtime), shared with doro.page    |
 | Real time | Supabase Realtime over QtWebSockets, or polling as a fallback     |
 | Tests     | Node (the pure logic in `Model.js`, `Supabase.js` and `Textos.js`) |

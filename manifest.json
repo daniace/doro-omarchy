@@ -3,7 +3,7 @@
   "id": "doro.pomodoro",
   "name": "Doro",
   "version": "0.1.0",
-  "author": "Doro",
+  "author": "Daniel Emiliano Acevedo, Leonel Jeremias Canario",
   "license": "MIT",
   "description": "Real-time collaborative Pomodoro in your Omarchy bar: doro.page rooms, dashboard stats and streaks, and gapless ambient sounds. English and Spanish.",
   "kinds": [
