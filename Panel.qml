@@ -195,10 +195,32 @@ Panel {
           }
         }
 
-        // ---- Controles: arrancar/pausar en el acento, reiniciar, tiempos y sonidos.
+        // ---- Controles: estudiar con otros, sonidos, arrancar/pausar en el acento,
+        //      reiniciar y tiempos.
         Row {
           anchors.horizontalCenter: parent.horizontalCenter
           spacing: Style.space(8)
+
+          PanelActionButton {
+            visible: root.nube !== null && root.nube.configurada
+            anchors.verticalCenter: parent.verticalCenter
+            iconText: "\u{f0849}"
+            tooltipText: root.sala && root.sala.salaId ? "Sala compartida" : "Estudiar con otros"
+            foreground: root.seccion === "sala" || (root.sala && root.sala.salaId) ? root.acento : root.apagado
+            hoverColor: root.seccion === "sala" ? root.acento : root.texto
+            fontFamily: root.fuente
+            onClicked: root.alternarSeccion("sala")
+          }
+
+          PanelActionButton {
+            anchors.verticalCenter: parent.verticalCenter
+            iconText: root.reloj && root.reloj.hayAmbienteActivo ? "\u{f057e}" : "\u{f0581}"
+            tooltipText: "Sonidos"
+            foreground: root.seccion === "sonidos" || (root.reloj && root.reloj.hayAmbienteActivo) ? root.acento : root.apagado
+            hoverColor: root.seccion === "sonidos" ? root.acento : root.texto
+            fontFamily: root.fuente
+            onClicked: root.alternarSeccion("sonidos")
+          }
 
           Rectangle {
             id: botonPlay
@@ -246,27 +268,6 @@ Panel {
             hoverColor: root.seccion === "tiempos" ? root.acento : root.texto
             fontFamily: root.fuente
             onClicked: root.alternarSeccion("tiempos")
-          }
-
-          PanelActionButton {
-            visible: root.nube !== null && root.nube.configurada
-            anchors.verticalCenter: parent.verticalCenter
-            iconText: "\u{f0849}"
-            tooltipText: root.sala && root.sala.salaId ? "Sala compartida" : "Estudiar con otros"
-            foreground: root.seccion === "sala" || (root.sala && root.sala.salaId) ? root.acento : root.apagado
-            hoverColor: root.seccion === "sala" ? root.acento : root.texto
-            fontFamily: root.fuente
-            onClicked: root.alternarSeccion("sala")
-          }
-
-          PanelActionButton {
-            anchors.verticalCenter: parent.verticalCenter
-            iconText: root.reloj && root.reloj.hayAmbienteActivo ? "\u{f057e}" : "\u{f0581}"
-            tooltipText: "Sonidos"
-            foreground: root.seccion === "sonidos" || (root.reloj && root.reloj.hayAmbienteActivo) ? root.acento : root.apagado
-            hoverColor: root.seccion === "sonidos" ? root.acento : root.texto
-            fontFamily: root.fuente
-            onClicked: root.alternarSeccion("sonidos")
           }
         }
 
