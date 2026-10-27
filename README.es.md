@@ -232,6 +232,14 @@ recarga.
 | `Supabase.js` | La lógica pura de la sesión, la vuelta del OAuth, la cola y el resumen |
 | `Textos.js` | Los textos visibles en inglés y español |
 
+## Créditos
+
+Los sonidos ambientales, la alarma y el tick son los mismos que usa doro.page. Salen de
+[Pixabay](https://pixabay.com/es/sound-effects/) (con la
+[licencia de contenido de Pixabay](https://pixabay.com/es/service/license-summary/)) y
+de [Freesound](https://freesound.org/) (con la licencia Creative Commons de cada sonido).
+
 ## Licencia
 
-[MIT](LICENSE), © 2026 Daniel Emiliano Acevedo y Leonel Jeremias Canario.
+El código es [MIT](LICENSE), © 2026 Daniel Emiliano Acevedo y Leonel Jeremias Canario. Los sonidos
+mantienen sus propias licencias (ver [Créditos](#créditos)).

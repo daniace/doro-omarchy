@@ -227,6 +227,14 @@ already open panel may keep the old version: `omarchy-restart-shell` reloads the
 | `Supabase.js` | The pure session, OAuth callback, queue and summary logic |
 | `Textos.js` | The visible texts in English and Spanish |
 
+## Credits
+
+The ambient sounds, the alarm and the tick are the same ones doro.page uses. They come
+from [Pixabay](https://pixabay.com/sound-effects/) (under the
+[Pixabay Content License](https://pixabay.com/service/license-summary/)) and
+[Freesound](https://freesound.org/) (under each sound's Creative Commons license).
+
 ## License
 
-[MIT](LICENSE), © 2026 Daniel Emiliano Acevedo and Leonel Jeremias Canario.
+The code is [MIT](LICENSE), © 2026 Daniel Emiliano Acevedo and Leonel Jeremias Canario. The sounds keep
+their own licenses (see [Credits](#credits)).
