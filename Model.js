@@ -18,29 +18,22 @@ var MAXIMOS = { pomodoro: 180, shortBreak: 60, longBreak: 90 }
 // Por encima de esto asumimos un estado guardado corrupto (igual que la web).
 var MAX_SEGUNDOS_VALIDOS = 24 * 60 * 60
 
-var ETIQUETA_MODO = {
-  pomodoro: "Pomodoro",
-  shortBreak: "Descanso corto",
-  longBreak: "Descanso largo",
-  stopwatch: "Cronómetro"
-}
-
 // Catálogo de sonidos ambientales: mismos `id` y archivos que
 // `src/features/room/components/music/ambientSounds.ts`. Los íconos son Nerd Font
-// (Material Design) en vez de lucide.
+// (Material Design) en vez de lucide; los nombres están en `Textos.js`.
 var SONIDOS_AMBIENTE = [
-  { id: "rain", nombre: "Lluvia", icono: "\u{f0597}", archivo: "rain.ogg" },
-  { id: "fire", nombre: "Fogata", icono: "\u{f0238}", archivo: "fire.ogg" },
-  { id: "ocean", nombre: "Océano", icono: "\u{f078d}", archivo: "ocean.ogg" },
-  { id: "thunder", nombre: "Truenos", icono: "\u{f0593}", archivo: "thunder.ogg" },
-  { id: "people", nombre: "Personas", icono: "\u{f0849}", archivo: "people.ogg" },
-  { id: "traffic", nombre: "Tráfico", icono: "\u{f010b}", archivo: "traffic.ogg" },
-  { id: "train", nombre: "Tren", icono: "\u{f052c}", archivo: "train.ogg" },
-  { id: "keyboard", nombre: "Teclado", icono: "\u{f030c}", archivo: "keyboard.ogg" },
-  { id: "birds", nombre: "Pájaros", icono: "\u{f15c6}", archivo: "birds.ogg" },
-  { id: "brown_noise", nombre: "Ruido marrón", icono: "\u{f0430}", archivo: "brown_noise.ogg" },
-  { id: "jazz", nombre: "Jazz", icono: "\u{f075a}", archivo: "jazz.ogg" },
-  { id: "underwater", nombre: "Subacuático", icono: "\u{f058c}", archivo: "white-noise-underwater.ogg" }
+  { id: "rain", icono: "\u{f0597}", archivo: "rain.ogg" },
+  { id: "fire", icono: "\u{f0238}", archivo: "fire.ogg" },
+  { id: "ocean", icono: "\u{f078d}", archivo: "ocean.ogg" },
+  { id: "thunder", icono: "\u{f0593}", archivo: "thunder.ogg" },
+  { id: "people", icono: "\u{f0849}", archivo: "people.ogg" },
+  { id: "traffic", icono: "\u{f010b}", archivo: "traffic.ogg" },
+  { id: "train", icono: "\u{f052c}", archivo: "train.ogg" },
+  { id: "keyboard", icono: "\u{f030c}", archivo: "keyboard.ogg" },
+  { id: "birds", icono: "\u{f15c6}", archivo: "birds.ogg" },
+  { id: "brown_noise", icono: "\u{f0430}", archivo: "brown_noise.ogg" },
+  { id: "jazz", icono: "\u{f075a}", archivo: "jazz.ogg" },
+  { id: "underwater", icono: "\u{f058c}", archivo: "white-noise-underwater.ogg" }
 ]
 
 function esModo(modo) {
@@ -92,12 +85,6 @@ function suenaTick(anterior, actual) {
   var cruzo10 = anterior > 10 && actual <= 10
   var cruzo5 = anterior > 5 && actual <= 5
   return (cruzo10 && actual > 5) || cruzo5
-}
-
-function aviso(modoTerminado) {
-  if (modoTerminado === "pomodoro")
-    return { titulo: "Terminó el pomodoro", cuerpo: "Tomate un descanso." }
-  return { titulo: "Terminó el descanso", cuerpo: "A enfocarse de nuevo." }
 }
 
 /**

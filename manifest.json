@@ -5,7 +5,7 @@
   "version": "0.1.0",
   "author": "Doro",
   "license": "MIT",
-  "description": "El reloj Pomodoro de doro.page en la barra de Omarchy, con sonidos ambientales.",
+  "description": "The doro.page Pomodoro timer in the Omarchy bar: ambient sounds, your dashboard stats and shared rooms.",
   "kinds": [
     "service",
     "bar-widget"
@@ -17,7 +17,7 @@
   },
   "barWidget": {
     "displayName": "Doro",
-    "description": "Reloj Pomodoro con sonidos ambientales",
+    "description": "Pomodoro timer with ambient sounds and shared rooms",
     "category": "Time",
     "allowMultiple": false,
     "defaultSection": "center"

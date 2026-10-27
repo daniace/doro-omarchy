@@ -27,3 +27,4 @@ jobs:
         run: |
           node tests/model.test.mjs
           node tests/supabase.test.mjs
+          node tests/textos.test.mjs

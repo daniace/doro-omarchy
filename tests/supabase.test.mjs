@@ -16,8 +16,9 @@ r = S.parsearRetorno("doro://auth#access_token=a&refresh_token=r&expires_at=2000
 r = S.parsearRetorno("doro://auth?error=server_error&error_code=identity_already_exists&error_description=Identity+is+already+linked", ahora);
 assert.deepEqual(r, { error: "Identity is already linked", codigo: "identity_already_exists" });
 r = S.parsearRetorno("doro://auth/#error=access_denied", ahora); assert.equal(r.error, "access_denied");
-assert.ok(S.parsearRetorno("https://evil/#access_token=a&refresh_token=r", ahora).error);
-assert.ok(S.parsearRetorno("doro://auth#access_token=a", ahora).error);
+assert.equal(S.parsearRetorno("https://evil/#access_token=a&refresh_token=r", ahora).codigo, "retorno_invalido");
+assert.equal(S.parsearRetorno("doro://auth#access_token=a", ahora).codigo, "faltan_tokens");
+assert.deepEqual(S.parsearRetorno("doro://auth#error=access_denied", ahora), { error: "access_denied", codigo: "error" });
 
 assert.equal(S.sesionGuardada("null"), null); assert.equal(S.sesionGuardada('{"access_token":1}'), null);
 const s = S.sesionGuardada('{"access_token":"a","refresh_token":"r","expires_at":5000,"usuario":{"id":"u","anonimo":true}}');

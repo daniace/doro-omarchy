@@ -2,6 +2,7 @@ import QtQuick
 import Quickshell
 import Quickshell.Io
 import "Supabase.js" as Supabase
+import "Textos.js" as Textos
 
 // La conexión con doro.page: la sesión, los pomodoros que van al dashboard y el
 // resumen del panel. Vive dentro del servicio, uno por sesión del shell.
@@ -12,6 +13,9 @@ Item {
   id: root
 
   required property string carpetaEstado
+  property string idioma: "en"
+
+  function t(clave, valores) { return Textos.t(idioma, clave, valores) }
 
   signal aviso(string titulo, string cuerpo)
 
@@ -116,7 +120,7 @@ Item {
           if (estado >= 400 && estado < 500) {
             var eraCuenta = usuario && !usuario.anonimo
             establecerSesion(null)
-            if (eraCuenta) root.aviso("Doro", "Se cerró tu sesión. Volvé a entrar desde el panel.")
+            if (eraCuenta) root.aviso("Doro", t("aviso.sesionCerrada"))
           }
           terminar(false)
         })
@@ -155,17 +159,18 @@ Item {
     })
   }
 
-  // La vuelta del navegador por `doro://auth` (IPC `sesion`).
+  // La vuelta del navegador por `doro://auth` (IPC `authCallback`).
   function recibirRetorno(url) {
     var retorno = Supabase.parsearRetorno(url, Date.now())
-    if (retorno.error) {
+    if (!retorno.tokens) {
       // La cuenta ya existía: se entra a ella y después se le suma el anónimo.
       if (retorno.codigo === "identity_already_exists" && usuario && usuario.anonimo && proveedorEnCurso) {
         tokenAnonimoPorFusionar = sesion.access_token
         abrir(Supabase.urlEntrar(conf.url, proveedorEnCurso))
         return
       }
-      root.aviso("No se pudo entrar", retorno.error)
+      var motivos = { retorno_invalido: "aviso.retornoInvalido", faltan_tokens: "aviso.faltanTokens" }
+      root.aviso(t("aviso.noSePudoEntrar"), motivos[retorno.codigo] ? t(motivos[retorno.codigo]) : retorno.error)
       return
     }
 
@@ -173,13 +178,13 @@ Item {
     pedir("GET", "/auth/v1/user", null, tokens.access_token, null, function(estado, datos) {
       var nuevoUsuario = estado === 200 ? Supabase.usuarioDesde(datos) : null
       if (!nuevoUsuario) {
-        root.aviso("No se pudo entrar", "Supabase no reconoció la sesión.")
+        root.aviso(t("aviso.noSePudoEntrar"), t("aviso.sesionNoReconocida"))
         return
       }
       tokens.usuario = nuevoUsuario
       establecerSesion(tokens)
       proveedorEnCurso = ""
-      root.aviso("Doro", "Entraste como " + (nuevoUsuario.nombre || "tu cuenta") + ".")
+      root.aviso("Doro", t("aviso.entraste", { nombre: nuevoUsuario.nombre || t("aviso.tuCuenta") }))
 
       var tokenAnonimo = tokenAnonimoPorFusionar
       tokenAnonimoPorFusionar = ""
@@ -193,7 +198,7 @@ Item {
       function(estado) {
         if (estado !== 200) {
           console.warn("Doro: sumar-anonimo respondió", estado)
-          root.aviso("Doro", "No se pudieron pasar los pomodoros anónimos a tu cuenta.")
+          root.aviso("Doro", t("aviso.fusionFallida"))
         }
         alCambiarSesion()
       })
@@ -290,8 +295,8 @@ Item {
     id: manejador
     command: ["sh", "-c",
       'd="${XDG_DATA_HOME:-$HOME/.local/share}/applications"; mkdir -p "$d" && ' +
-      'printf "%s\\n" "[Desktop Entry]" "Type=Application" "Name=Doro (inicio de sesión)" "NoDisplay=true" ' +
-      '"Exec=omarchy-shell doro.pomodoro sesion %u" "MimeType=x-scheme-handler/doro;" > "$d/doro-auth.desktop" && ' +
+      'printf "%s\\n" "[Desktop Entry]" "Type=Application" "Name=Doro (sign-in)" "NoDisplay=true" ' +
+      '"Exec=omarchy-shell doro.pomodoro authCallback %u" "MimeType=x-scheme-handler/doro;" > "$d/doro-auth.desktop" && ' +
       'xdg-mime default doro-auth.desktop x-scheme-handler/doro']
     onExited: function(codigo) {
       if (codigo !== 0) console.warn("Doro: no se pudo registrar doro://", codigo)

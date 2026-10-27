@@ -4,6 +4,7 @@ import Quickshell
 import Quickshell.Io
 import qs.Commons
 import "Model.js" as Model
+import "Textos.js" as Textos
 
 // El reloj de Doro, uno por sesión del shell.
 //
@@ -32,7 +33,23 @@ Item {
   property real tiempoFinObjetivo: 0
   property real tiempoInicioCronometro: 0
 
-  readonly property string etiquetaModo: Model.ETIQUETA_MODO[modo]
+  // ---- Idioma de lo visible: el ajuste `language` del widget (lo pasa la
+  //      barra) o, sin ajuste, el del sistema. Ver `Textos.js`.
+  property string idiomaAjuste: ""
+  readonly property string idioma: Textos.idiomaElegido(idiomaAjuste,
+    Quickshell.env("LC_ALL") || Quickshell.env("LC_MESSAGES") || Quickshell.env("LANG"))
+
+  function t(clave, valores) { return Textos.t(idioma, clave, valores) }
+
+  // Lo guarda en el ajuste del widget en shell.json, como `omarchy bar set`;
+  // la barra lo devuelve en `idiomaAjuste`.
+  function establecerIdioma(nuevo) {
+    if (Textos.IDIOMAS.indexOf(nuevo) === -1) return
+    idiomaAjuste = nuevo
+    Quickshell.execDetached(["omarchy", "bar", "set", idPlugin, "language", nuevo])
+  }
+
+  readonly property string etiquetaModo: t("modo." + modo)
   readonly property string texto: Model.formatear(tiempoRestante)
   readonly property var avance: Model.avance(modo, tiempoRestante, tiempoInicial)
   // Todavía no arrancó la fase: la barra muestra solo el anillo.
@@ -181,7 +198,7 @@ Item {
   }
 
   function avisar(terminado) {
-    var aviso = Model.aviso(terminado)
+    var aviso = Textos.aviso(idioma, terminado)
     notificar(aviso.titulo, aviso.cuerpo)
   }
 
@@ -196,6 +213,7 @@ Item {
   Nube {
     id: nube
     carpetaEstado: root.carpetaEstado
+    idioma: root.idioma
     onAviso: function(titulo, cuerpo) { root.notificar(titulo, cuerpo) }
   }
 
@@ -207,6 +225,7 @@ Item {
   Sala {
     id: sala
     nube: nube
+    idioma: root.idioma
     onEstadoRecibido: function(estado) { root.aplicarRemoto(estado) }
     onAviso: function(titulo, cuerpo) { root.notificar(titulo, cuerpo) }
     onCambio: root.guardar()
@@ -230,6 +249,16 @@ Item {
   }
 
   function crearSala() { sala.crear(estadoLocal()) }
+
+  // Lo que estaba por subirse (por ejemplo, pausar justo antes) sale antes de
+  // irse; si no, la sala quedaría corriendo para los demás.
+  function salirSala() {
+    if (subida.running) {
+      subida.stop()
+      sala.subir(estadoLocal())
+    }
+    sala.salir()
+  }
 
   function aplicarRemoto(remoto) {
     var estado = Model.aplicarRemoto(remoto, configuracion, Date.now())
@@ -370,37 +399,54 @@ Item {
     shell[accion](idPlugin, "{}")
   }
 
+  // El panel abierto en una sección: lo escuchan los paneles de cada monitor.
+  signal seccionPedida(string nombre)
+
+  // Los nombres del IPC (en inglés) y los de las secciones del panel.
+  readonly property var secciones: ({ timer: "", times: "tiempos", sounds: "sonidos", room: "sala" })
+
+  function abrirSeccion(nombre) {
+    if (!(nombre in secciones)) return
+    seccionPedida(secciones[nombre])
+    invocarVista("summon")
+  }
+
+  // La API es en inglés: es lo que la gente pone en sus atajos y scripts.
   ShellIpc {
     target: root.idPlugin
 
-    function alternar(): void { root.alternar() }
-    function iniciar(): void { root.iniciar() }
-    function pausar(): void { root.pausar() }
-    function reiniciar(): void { root.reiniciar() }
-    function siguienteModo(): void { root.siguienteModo() }
-    function modo(nuevo: string): void { root.establecerModo(nuevo) }
-    function ambiente(): void { root.alternarAmbiente() }
-    // El aviso y la alarma de fin de pomodoro, sin tocar el reloj.
-    function probarAviso(): void { root.sonar(alarma); root.avisar("pomodoro") }
-    function volumen(id: string, valor: int): void { root.establecerVolumen(id, valor) }
-    function estado(): string {
-      return JSON.stringify({ modo: root.modo, estaActivo: root.estaActivo, tiempoRestante: root.tiempoRestante, texto: root.texto,
-        usuario: nube.usuario, pendientes: nube.pendientes.length, conectado: nube.configurada,
-        sala: sala.salaId ? { id: sala.salaId, codigo: sala.codigo, link: sala.link, unida: sala.unida, enVivo: sala.enVivo } : null })
+    function toggle(): void { root.alternar() }
+    function start(): void { root.iniciar() }
+    function pause(): void { root.pausar() }
+    function reset(): void { root.reiniciar() }
+    function nextMode(): void { root.siguienteModo() }
+    function mode(nuevo: string): void { root.establecerModo(nuevo) }
+    function toggleAmbient(): void { root.alternarAmbiente() }
+    function volume(id: string, valor: int): void { root.establecerVolumen(id, valor) }
+    // The end-of-pomodoro notification and alarm, without touching the timer.
+    function testNotification(): void { root.sonar(alarma); root.avisar("pomodoro") }
+    function status(): string {
+      return JSON.stringify({ mode: root.modo, running: root.estaActivo, remaining: root.tiempoRestante, text: root.texto,
+        language: root.idioma, user: nube.usuario ? { id: nube.usuario.id, anonymous: nube.usuario.anonimo, name: nube.usuario.nombre } : null,
+        pending: nube.pendientes.length, connected: nube.configurada,
+        room: sala.salaId ? { id: sala.salaId, code: sala.codigo, link: sala.link, joined: sala.unida, live: sala.enVivo } : null })
     }
-    // Salas: `unirse <link o código>`, `crearSala` (copia el link), `copiarLink`, `salirSala`.
-    function unirse(texto: string): void { sala.unirse(texto) }
-    function crearSala(): void { root.crearSala() }
-    function copiarLink(): void { sala.copiarLink() }
-    function salirSala(): void { sala.salir() }
-    // doro.page: `entrar google|github|discord`, `salir`, y `sesion <url>`, que
-    // es la vuelta del navegador por `doro://auth`.
-    function entrar(proveedor: string): void { nube.entrar(proveedor) }
-    function salir(): void { nube.salir() }
-    function sesion(url: string): void { nube.recibirRetorno(url) }
+    function language(codigo: string): void { root.establecerIdioma(codigo) }
+    // Rooms: `joinRoom <link or code>`, `createRoom` (copies the link), `copyRoomLink`, `leaveRoom`.
+    function joinRoom(texto: string): void { sala.unirse(texto) }
+    function createRoom(): void { root.crearSala() }
+    function copyRoomLink(): void { sala.copiarLink() }
+    function leaveRoom(): void { root.salirSala() }
+    // doro.page: `signIn google|github|discord`, `signOut`, and `authCallback <url>`,
+    // the browser coming back through `doro://auth`.
+    function signIn(proveedor: string): void { nube.entrar(proveedor) }
+    function signOut(): void { nube.salir() }
+    function authCallback(url: string): void { nube.recibirRetorno(url) }
     function dashboard(): void { nube.abrirDashboard() }
-    function abrir(): void { root.invocarVista("summon") }
-    function cerrar(): void { root.invocarVista("hide") }
+    function open(): void { root.invocarVista("summon") }
+    function close(): void { root.invocarVista("hide") }
     function panel(): void { root.invocarVista("toggle") }
+    // The panel open on `times`, `sounds` or `room` (`timer`: just the clock).
+    function section(nombre: string): void { root.abrirSeccion(nombre) }
   }
 }

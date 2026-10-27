@@ -2,6 +2,7 @@ import QtQuick
 import Quickshell
 import qs.Commons
 import qs.Ui
+import "Textos.js" as Textos
 
 // El panel de Doro: la fase, el reloj grande con su hilo, los controles y, a
 // pedido, los tiempos y los sonidos ambientales. Lee y maneja `reloj`
@@ -41,7 +42,7 @@ Panel {
   function sonidoPorId(id) {
     var lista = reloj ? reloj.sonidosAmbiente : []
     for (var i = 0; i < lista.length; i++) if (lista[i].id === id) return lista[i]
-    return { id: id, nombre: id, icono: "" }
+    return { id: id, icono: "" }
   }
 
   readonly property color texto: bar ? bar.foreground : Color.foreground
@@ -51,6 +52,9 @@ Panel {
   readonly property string fuente: bar ? bar.fontFamily : Style.font.family
 
   readonly property var nube: reloj ? reloj.nube : null
+  readonly property string idioma: reloj ? reloj.idioma : "en"
+
+  function t(clave, valores) { return Textos.t(idioma, clave, valores) }
   readonly property var sala: reloj ? reloj.sala : null
   onOpenedChanged: if (opened && nube) nube.cargarResumen()
 
@@ -58,6 +62,11 @@ Panel {
   function close() { root.controller.hide() }
   function toggle() { if (root.opened) root.close(); else root.open() }
   function alternarSeccion(nombre) { seccion = seccion === nombre ? "" : nombre }
+
+  Connections {
+    target: root.reloj
+    function onSeccionPedida(nombre) { root.seccion = nombre }
+  }
 
   function switchPanel(direction) {
     if (root.bar && typeof root.bar.switchPanelFrom === "function")
@@ -145,7 +154,7 @@ Panel {
           PanelActionButton {
             anchors.verticalCenter: parent.verticalCenter
             iconText: root.reloj && root.reloj.modo === "stopwatch" ? "\u{f0141}" : "\u{f0142}"
-            tooltipText: root.reloj && root.reloj.modo === "stopwatch" ? "Volver al pomodoro" : "Pasar a cronómetro"
+            tooltipText: root.t(root.reloj && root.reloj.modo === "stopwatch" ? "panel.volverPomodoro" : "panel.pasarCronometro")
             foreground: root.apagado
             hoverColor: root.texto
             fontFamily: root.fuente
@@ -205,7 +214,7 @@ Panel {
             visible: root.nube !== null && root.nube.configurada
             anchors.verticalCenter: parent.verticalCenter
             iconText: "\u{f0849}"
-            tooltipText: root.sala && root.sala.salaId ? "Sala compartida" : "Estudiar con otros"
+            tooltipText: root.t(root.sala && root.sala.salaId ? "panel.salaCompartida" : "panel.estudiarConOtros")
             foreground: root.seccion === "sala" || (root.sala && root.sala.salaId) ? root.acento : root.apagado
             hoverColor: root.seccion === "sala" ? root.acento : root.texto
             fontFamily: root.fuente
@@ -215,7 +224,7 @@ Panel {
           PanelActionButton {
             anchors.verticalCenter: parent.verticalCenter
             iconText: root.reloj && root.reloj.hayAmbienteActivo ? "\u{f057e}" : "\u{f0581}"
-            tooltipText: "Sonidos"
+            tooltipText: root.t("panel.sonidos")
             foreground: root.seccion === "sonidos" || (root.reloj && root.reloj.hayAmbienteActivo) ? root.acento : root.apagado
             hoverColor: root.seccion === "sonidos" ? root.acento : root.texto
             fontFamily: root.fuente
@@ -253,7 +262,7 @@ Panel {
           PanelActionButton {
             anchors.verticalCenter: parent.verticalCenter
             iconText: "\u{f0450}"
-            tooltipText: "Reiniciar"
+            tooltipText: root.t("panel.reiniciar")
             foreground: root.apagado
             hoverColor: root.texto
             fontFamily: root.fuente
@@ -263,7 +272,7 @@ Panel {
           PanelActionButton {
             anchors.verticalCenter: parent.verticalCenter
             iconText: "\u{f0493}"
-            tooltipText: "Tiempos"
+            tooltipText: root.t("panel.tiempos")
             foreground: root.seccion === "tiempos" ? root.acento : root.apagado
             hoverColor: root.seccion === "tiempos" ? root.acento : root.texto
             fontFamily: root.fuente
@@ -279,9 +288,9 @@ Panel {
 
           Repeater {
             model: [
-              { clave: "pomodoro", nombre: "Pomodoro" },
-              { clave: "shortBreak", nombre: "Descanso corto" },
-              { clave: "longBreak", nombre: "Descanso largo" }
+              { clave: "pomodoro" },
+              { clave: "shortBreak" },
+              { clave: "longBreak" }
             ]
 
             Item {
@@ -292,7 +301,7 @@ Panel {
               Text {
                 anchors.left: parent.left
                 anchors.verticalCenter: parent.verticalCenter
-                text: modelData.nombre
+                text: root.t("modo." + modelData.clave)
                 color: root.texto
                 font.family: root.fuente
                 font.pixelSize: Style.font.body
@@ -306,7 +315,7 @@ Panel {
                 PanelActionButton {
                   anchors.verticalCenter: parent.verticalCenter
                   iconText: "\u{f0374}"
-                  tooltipText: modelData.nombre + ": un minuto menos"
+                  tooltipText: root.t("panel.minutoMenos", { nombre: root.t("modo." + modelData.clave) })
                   foreground: root.apagado
                   hoverColor: root.texto
                   fontFamily: root.fuente
@@ -328,7 +337,7 @@ Panel {
                 PanelActionButton {
                   anchors.verticalCenter: parent.verticalCenter
                   iconText: "\u{f0415}"
-                  tooltipText: modelData.nombre + ": un minuto más"
+                  tooltipText: root.t("panel.minutoMas", { nombre: root.t("modo." + modelData.clave) })
                   foreground: root.apagado
                   hoverColor: root.texto
                   fontFamily: root.fuente
@@ -338,7 +347,7 @@ Panel {
 
                 Text {
                   anchors.verticalCenter: parent.verticalCenter
-                  text: "min"
+                  text: root.t("panel.min")
                   color: root.apagado
                   font.family: root.fuente
                   font.pixelSize: Style.font.caption
@@ -361,7 +370,7 @@ Panel {
             Text {
               anchors.left: parent.left
               anchors.verticalCenter: parent.verticalCenter
-              text: "Arrancar el descanso solo"
+              text: root.t("panel.descansoSolo")
               color: root.texto
               font.family: root.fuente
               font.pixelSize: Style.font.body
@@ -392,7 +401,7 @@ Panel {
             Text {
               anchors.left: parent.left
               anchors.verticalCenter: parent.verticalCenter
-              text: "Sonidos"
+              text: root.t("panel.sonidos")
               color: root.apagado
               font.family: root.fuente
               font.pixelSize: Style.font.caption
@@ -404,7 +413,7 @@ Panel {
               anchors.right: parent.right
               anchors.verticalCenter: parent.verticalCenter
               visible: root.reloj !== null && Object.keys(root.reloj.mezcla).length > 0
-              text: root.reloj && root.reloj.ambienteActivo ? "Pausar todo" : "Reanudar"
+              text: root.t(root.reloj && root.reloj.ambienteActivo ? "panel.pausarTodo" : "panel.reanudar")
               color: zonaPausarTodo.containsMouse ? root.texto : root.acento
               font.family: root.fuente
               font.pixelSize: Style.font.bodySmall
@@ -446,7 +455,7 @@ Panel {
                 anchors.left: icono.right
                 anchors.verticalCenter: parent.verticalCenter
                 width: Style.space(88)
-                text: sonido.nombre
+                text: root.t("sonido." + sonido.id)
                 color: root.texto
                 font.family: root.fuente
                 font.pixelSize: Style.font.bodySmall
@@ -476,7 +485,7 @@ Panel {
                 anchors.right: parent.right
                 anchors.verticalCenter: parent.verticalCenter
                 iconText: "\u{f0156}"
-                tooltipText: "Apagar " + sonido.nombre
+                tooltipText: root.t("panel.apagar", { nombre: root.t("sonido." + sonido.id) })
                 foreground: root.apagado
                 hoverColor: root.texto
                 fontFamily: root.fuente
@@ -523,7 +532,7 @@ Panel {
                   Text {
                     width: parent.width
                     horizontalAlignment: Text.AlignHCenter
-                    text: mosaico.modelData.nombre
+                    text: root.t("sonido." + mosaico.modelData.id)
                     color: mosaico.prendido || zonaMosaico.containsMouse ? root.texto : root.apagado
                     font.family: root.fuente
                     font.pixelSize: Style.font.caption
@@ -544,7 +553,7 @@ Panel {
 
           Text {
             visible: !root.verTodos && root.reloj !== null && root.reloj.sonidosAmbiente.length > 8
-            text: "Ver los " + (root.reloj ? root.reloj.sonidosAmbiente.length : 0)
+            text: root.t("panel.verTodos", { n: root.reloj ? root.reloj.sonidosAmbiente.length : 0 })
             color: zonaVerTodos.containsMouse ? root.texto : root.apagado
             font.family: root.fuente
             font.pixelSize: Style.font.bodySmall
@@ -572,9 +581,9 @@ Panel {
 
           Text {
             width: parent.width
-            text: !parent.enSala ? "Pegá el link o el código de una invitación, o creá una sala y compartí su link."
-              : !root.sala.unida ? "Conectando con la sala…"
-              : "Cualquiera en la sala mueve este reloj." + (root.sala.enVivo ? "" : " (Se actualiza cada 2 segundos.)")
+            text: !parent.enSala ? root.t("sala.ayuda")
+              : !root.sala.unida ? root.t("sala.conectando")
+              : root.t("sala.compartida") + (root.sala.enVivo ? "" : root.t("sala.cadaDosSegundos"))
             color: root.apagado
             font.family: root.fuente
             font.pixelSize: Style.font.caption
@@ -589,7 +598,7 @@ Panel {
             TextField {
               id: campoInvitacion
               width: parent.width - botonUnirse.width - parent.spacing
-              placeholderText: "doro.page/invitacion/…"
+              placeholderText: root.t("sala.placeholder")
               foreground: root.texto
               accent: root.acento
               onAccepted: botonUnirse.unirse()
@@ -599,7 +608,7 @@ Panel {
               id: botonUnirse
               anchors.verticalCenter: parent.verticalCenter
               iconText: "\u{f0142}"
-              tooltipText: "Unirse"
+              tooltipText: root.t("sala.unirse")
               foreground: campoInvitacion.text.trim() ? root.acento : root.apagado
               hoverColor: root.texto
               fontFamily: root.fuente
@@ -614,7 +623,7 @@ Panel {
 
           Text {
             visible: !parent.enSala
-            text: "Crear una sala"
+            text: root.t("sala.crear")
             color: zonaCrearSala.containsMouse ? root.texto : root.acento
             font.family: root.fuente
             font.pixelSize: Style.font.bodySmall
@@ -638,7 +647,7 @@ Panel {
               anchors.left: parent.left
               anchors.right: accionesSala.left
               anchors.verticalCenter: parent.verticalCenter
-              text: root.sala && root.sala.codigo ? "Sala " + root.sala.codigo : "Sala"
+              text: root.sala && root.sala.codigo ? root.t("sala.nombre", { codigo: root.sala.codigo }) : root.t("sala.sinCodigo")
               color: root.texto
               font.family: root.fuente
               font.pixelSize: Style.font.body
@@ -654,7 +663,7 @@ Panel {
               PanelActionButton {
                 visible: root.sala !== null && root.sala.link !== ""
                 iconText: "\u{f0337}"
-                tooltipText: "Copiar el link de invitación"
+                tooltipText: root.t("sala.copiarLink")
                 foreground: root.apagado
                 hoverColor: root.texto
                 fontFamily: root.fuente
@@ -664,12 +673,12 @@ Panel {
 
               PanelActionButton {
                 iconText: "\u{f0343}"
-                tooltipText: "Salir de la sala"
+                tooltipText: root.t("sala.salir")
                 foreground: root.apagado
                 hoverColor: root.texto
                 fontFamily: root.fuente
                 fontSize: Style.font.body
-                onClicked: root.sala.salir()
+                onClicked: root.reloj.salirSala()
               }
             }
           }
@@ -697,8 +706,8 @@ Panel {
               anchors.verticalCenter: parent.verticalCenter
               text: {
                 var r = root.nube ? root.nube.resumen : null
-                if (!r) return "Tus pomodoros van al dashboard"
-                return "Hoy " + r.hoy + " min · racha de " + r.racha + (r.racha === 1 ? " día" : " días")
+                if (!r) return root.t("cuenta.vaAlDashboard")
+                return Textos.resumen(root.idioma, r.hoy, r.racha)
               }
               color: root.nube && root.nube.resumen ? root.texto : root.apagado
               font.family: root.fuente
@@ -711,7 +720,7 @@ Panel {
               anchors.right: parent.right
               anchors.verticalCenter: parent.verticalCenter
               iconText: "\u{f0128}"
-              tooltipText: "Ver el dashboard"
+              tooltipText: root.t("cuenta.verDashboard")
               foreground: root.apagado
               hoverColor: root.texto
               fontFamily: root.fuente
@@ -729,7 +738,7 @@ Panel {
             Text {
               anchors.left: parent.left
               anchors.verticalCenter: parent.verticalCenter
-              text: parent.conCuenta ? (parent.usuario.nombre || "Con tu cuenta") : "Entrar con"
+              text: parent.conCuenta ? (parent.usuario.nombre || root.t("cuenta.conTuCuenta")) : root.t("cuenta.entrarCon")
               color: root.apagado
               font.family: root.fuente
               font.pixelSize: Style.font.caption
@@ -739,7 +748,7 @@ Panel {
               visible: parent.conCuenta
               anchors.right: parent.right
               anchors.verticalCenter: parent.verticalCenter
-              text: "Salir"
+              text: root.t("cuenta.salir")
               color: zonaSalir.containsMouse ? root.texto : root.acento
               font.family: root.fuente
               font.pixelSize: Style.font.bodySmall
@@ -770,12 +779,64 @@ Panel {
                 PanelActionButton {
                   required property var modelData
                   iconText: modelData.icono
-                  tooltipText: "Entrar con " + modelData.nombre
+                  tooltipText: root.t("cuenta.entrarConProveedor", { proveedor: modelData.nombre })
                   foreground: root.apagado
                   hoverColor: root.texto
                   fontFamily: root.fuente
                   fontSize: Style.font.body
                   onClicked: root.nube.entrar(modelData.id)
+                }
+              }
+            }
+          }
+        }
+
+        // ---- Idioma: EN / ES. Se guarda en el ajuste `language` del widget.
+        Item {
+          width: parent.width
+          height: Style.space(24)
+
+          Rectangle {
+            anchors.top: parent.top
+            width: parent.width
+            height: 1
+            color: root.linea
+          }
+
+          Text {
+            anchors.left: parent.left
+            anchors.bottom: parent.bottom
+            text: root.t("panel.idioma")
+            color: root.apagado
+            font.family: root.fuente
+            font.pixelSize: Style.font.caption
+          }
+
+          Row {
+            anchors.right: parent.right
+            anchors.bottom: parent.bottom
+            spacing: Style.space(10)
+
+            Repeater {
+              model: ["en", "es"]
+
+              Text {
+                required property string modelData
+                readonly property bool elegido: root.idioma === modelData
+                text: modelData.toUpperCase()
+                // En negrita y con el color del texto: el acento puede ser gris en algunos temas.
+                color: elegido || zonaIdioma.containsMouse ? root.texto : root.apagado
+                font.family: root.fuente
+                font.pixelSize: Style.font.caption
+                font.weight: elegido ? Font.DemiBold : Font.Normal
+
+                MouseArea {
+                  id: zonaIdioma
+                  anchors.fill: parent
+                  anchors.margins: -Style.space(4)
+                  hoverEnabled: true
+                  cursorShape: parent.elegido ? Qt.ArrowCursor : Qt.PointingHandCursor
+                  onClicked: if (!parent.elegido) root.reloj.establecerIdioma(modelData)
                 }
               }
             }

@@ -106,11 +106,13 @@ function parametros(texto) {
 /**
  * Lee la vuelta del OAuth (`doro://auth?…#…`). Devuelve
  * `{ tokens: { access_token, refresh_token, expires_at } }` o
- * `{ error, codigo }`; Supabase pone los errores en la query o en el fragmento.
+ * `{ error, codigo }`: `codigo` es el `error_code` de Supabase (que pone los errores
+ * en la query o en el fragmento), `retorno_invalido` o `faltan_tokens`; `error`, su
+ * descripción si la trae.
  */
 function parsearRetorno(url, ahora) {
   if (typeof url !== "string" || url.indexOf(REDIRECCION) !== 0)
-    return { error: "No es una vuelta de Doro", codigo: "" }
+    return { error: "", codigo: "retorno_invalido" }
   var resto = url.slice(REDIRECCION.length)
   var numeral = resto.indexOf("#")
   var query = numeral === -1 ? resto : resto.slice(0, numeral)
@@ -118,9 +120,9 @@ function parsearRetorno(url, ahora) {
   var datos = Object.assign(parametros(query.replace(/^[/?]+/, "")), parametros(fragmento))
 
   if (datos.error || datos.error_code)
-    return { error: datos.error_description || datos.error || "Error al entrar", codigo: datos.error_code || "" }
+    return { error: datos.error_description || datos.error || "", codigo: datos.error_code || "error" }
   if (!datos.access_token || !datos.refresh_token)
-    return { error: "Faltan los tokens", codigo: "" }
+    return { error: "", codigo: "faltan_tokens" }
   return { tokens: sesionDesdeRespuesta(datos, ahora) }
 }
 

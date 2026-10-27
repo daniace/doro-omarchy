@@ -2,6 +2,7 @@ import QtQuick
 import Quickshell
 import "Model.js" as Model
 import "Supabase.js" as Supabase
+import "Textos.js" as Textos
 
 // La sala de doro.page en la que está el reloj: entrar por link o código, crear
 // una y mantener `rooms.timer_state` sincronizado, como `useSincronizacionReloj`
@@ -14,6 +15,9 @@ Item {
   id: root
 
   required property var nube
+  property string idioma: "en"
+
+  function t(clave, valores) { return Textos.t(idioma, clave, valores) }
 
   signal estadoRecibido(var estado)
   signal aviso(string titulo, string cuerpo)
@@ -38,23 +42,23 @@ Item {
 
   function unirse(texto) {
     var destino = Model.parsearSala(texto)
-    if (!destino) return root.aviso("Doro", "Eso no parece un link ni un código de sala.")
-    if (!nube.configurada) return root.aviso("Doro", "Falta configurar la conexión con doro.page.")
+    if (!destino) return root.aviso("Doro", t("aviso.salaLinkInvalido"))
+    if (!nube.configurada) return root.aviso("Doro", t("aviso.sinConexionDoro"))
     if (destino.salaId) return entrar(destino.salaId, "")
 
     nube.pedirConSesion("POST", "/rest/v1/rpc/join_room", { p_code: destino.codigo }, null, true, function(estado, datos) {
       if (estado === 200 && Model.esUuid(datos)) return entrar(datos, destino.codigo)
-      root.aviso("No se pudo entrar a la sala", estado === 0 ? "Sin conexión." : "La invitación no existe o venció.")
+      root.aviso(t("aviso.noSePudoEntrarSala"), t(estado === 0 ? "aviso.sinConexion" : "aviso.invitacionVencida"))
     })
   }
 
   function crear(estadoInicial) {
-    if (!nube.configurada) return root.aviso("Doro", "Falta configurar la conexión con doro.page.")
+    if (!nube.configurada) return root.aviso("Doro", t("aviso.sinConexionDoro"))
     nube.pedirConSesion("POST", "/rest/v1/rpc/create_room",
       { p_name: "Sala de estudio", p_is_public: false, p_expires_minutes: null }, null, true, function(estado, datos) {
         var fila = Array.isArray(datos) ? datos[0] : null
         if (estado !== 200 || !fila || !Model.esUuid(fila.room_id)) {
-          root.aviso("No se pudo crear la sala", estado === 0 ? "Sin conexión." : "Supabase la rechazó.")
+          root.aviso(t("aviso.noSePudoCrearSala"), t(estado === 0 ? "aviso.sinConexion" : "aviso.salaRechazada"))
           return
         }
         cerrarRealtime()
@@ -66,7 +70,7 @@ Item {
         subir(estadoInicial)
         abrirRealtime()
         copiarLink()
-        root.aviso("Sala creada", "Copiaste el link: compartilo para que se unan.")
+        root.aviso(t("aviso.salaCreada"), t("aviso.linkCopiado"))
       })
   }
 
@@ -103,7 +107,7 @@ Item {
       } else if (estado === 0 || estado >= 500) {
         reintento.restart()
       } else {
-        root.aviso("Doro", "La sala ya no existe.")
+        root.aviso("Doro", t("aviso.salaNoExiste"))
         salir()
       }
     })

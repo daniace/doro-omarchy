@@ -49,9 +49,15 @@ BarWidget {
   implicitWidth: button.implicitWidth
   implicitHeight: button.implicitHeight
 
+  // El idioma es un ajuste del widget (`omarchy bar set doro.pomodoro language es`),
+  // pero lo usa el servicio, que es el que manda los avisos.
+  function pasarIdioma() {
+    if (reloj) reloj.idiomaAjuste = String(setting("language", ""))
+  }
+
   onBarChanged: injectPanel()
-  onSettingsChanged: injectPanel()
-  onRelojChanged: injectPanel()
+  onSettingsChanged: { injectPanel(); pasarIdioma() }
+  onRelojChanged: { injectPanel(); pasarIdioma() }
 
   Loader {
     id: panelLoader
@@ -77,7 +83,8 @@ BarWidget {
     fixedHeight: root.vertical ? Style.bar.iconSlot : -1
     horizontalMargin: 8.75
     tooltipText: root.reloj
-      ? root.reloj.etiquetaModo + (root.reloj.estaActivo ? "" : " · en pausa") + (root.enSala ? " · en sala" : "")
+      ? root.reloj.etiquetaModo + (root.reloj.estaActivo ? "" : " · " + root.reloj.t("barra.enPausa"))
+        + (root.enSala ? " · " + root.reloj.t("barra.enSala") : "")
       : "Doro"
 
     onPressed: function(b) {
