@@ -8,8 +8,8 @@ import qs.Ui
 // (Service.qml); no guarda estado propio salvo qué sección está abierta.
 Panel {
   id: root
-  moduleName: "page.doro.pomodoro"
-  ipcTarget: "page.doro.pomodoro"
+  moduleName: "doro.pomodoro"
+  ipcTarget: "doro.pomodoro"
   // El destino IPC es del servicio, que hay uno solo; este panel hay uno por monitor.
   manageIpc: false
 

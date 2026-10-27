@@ -6,7 +6,7 @@
 #   scripts/instalar-local.sh
 set -euo pipefail
 
-id="page.doro.pomodoro"
+id="doro.pomodoro"
 repo="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 destino="$HOME/.config/omarchy/plugins/$id"
 

@@ -291,7 +291,7 @@ Item {
     command: ["sh", "-c",
       'd="${XDG_DATA_HOME:-$HOME/.local/share}/applications"; mkdir -p "$d" && ' +
       'printf "%s\\n" "[Desktop Entry]" "Type=Application" "Name=Doro (inicio de sesión)" "NoDisplay=true" ' +
-      '"Exec=omarchy-shell page.doro.pomodoro sesion %u" "MimeType=x-scheme-handler/doro;" > "$d/doro-auth.desktop" && ' +
+      '"Exec=omarchy-shell doro.pomodoro sesion %u" "MimeType=x-scheme-handler/doro;" > "$d/doro-auth.desktop" && ' +
       'xdg-mime default doro-auth.desktop x-scheme-handler/doro']
     onExited: function(codigo) {
       if (codigo !== 0) console.warn("Doro: no se pudo registrar doro://", codigo)

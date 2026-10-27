@@ -19,7 +19,7 @@ jobs:
 
       - name: Revisar el manifest
         run: |
-          jq -e '.schemaVersion == 1 and .id == "page.doro.pomodoro" and (.version | test("^[0-9]+\\.[0-9]+\\.[0-9]+"))' manifest.json
+          jq -e '.schemaVersion == 1 and .id == "doro.pomodoro" and (.version | test("^[0-9]+\\.[0-9]+\\.[0-9]+"))' manifest.json
           for f in $(jq -r '.entryPoints[]' manifest.json); do test -f "$f"; done
           test -z "$(find . -path ./.git -prune -o -type l -print)"
 

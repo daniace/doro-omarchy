@@ -1,9 +1,10 @@
 {
   "schemaVersion": 1,
-  "id": "page.doro.pomodoro",
+  "id": "doro.pomodoro",
   "name": "Doro",
   "version": "0.1.0",
   "author": "Doro",
+  "license": "MIT",
   "description": "El reloj Pomodoro de doro.page en la barra de Omarchy, con sonidos ambientales.",
   "kinds": [
     "service",

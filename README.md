@@ -71,34 +71,34 @@ ponerlo (izquierda, centro o derecha); viene marcado al lado del reloj
 Para moverlo después:
 
 ```sh
-omarchy bar move page.doro.pomodoro --section right   # left | centerBegin | center | centerEnd | tray | right
+omarchy bar move doro.pomodoro --section right   # left | centerBegin | center | centerEnd | tray | right
 ```
 
 ## Atajos y scripts (IPC)
 
 ```sh
-omarchy-shell page.doro.pomodoro alternar        # arrancar / pausar
-omarchy-shell page.doro.pomodoro reiniciar
-omarchy-shell page.doro.pomodoro siguienteModo
-omarchy-shell page.doro.pomodoro modo stopwatch  # pomodoro | shortBreak | longBreak | stopwatch
-omarchy-shell page.doro.pomodoro volumen rain 40 # 0 lo apaga
-omarchy-shell page.doro.pomodoro ambiente        # pausar / reanudar los sonidos
-omarchy-shell page.doro.pomodoro panel           # abrir / cerrar el panel
-omarchy-shell page.doro.pomodoro estado          # JSON con la fase y el tiempo
-omarchy-shell page.doro.pomodoro probarAviso     # el aviso y la alarma de fin de pomodoro
-omarchy-shell page.doro.pomodoro entrar github   # google | github | discord
-omarchy-shell page.doro.pomodoro salir
-omarchy-shell page.doro.pomodoro dashboard       # abre doro.page/dashboard
-omarchy-shell page.doro.pomodoro unirse https://doro.page/invitacion/AB12CD34   # o el código
-omarchy-shell page.doro.pomodoro crearSala       # y copia el link de invitación
-omarchy-shell page.doro.pomodoro copiarLink
-omarchy-shell page.doro.pomodoro salirSala
+omarchy-shell doro.pomodoro alternar        # arrancar / pausar
+omarchy-shell doro.pomodoro reiniciar
+omarchy-shell doro.pomodoro siguienteModo
+omarchy-shell doro.pomodoro modo stopwatch  # pomodoro | shortBreak | longBreak | stopwatch
+omarchy-shell doro.pomodoro volumen rain 40 # 0 lo apaga
+omarchy-shell doro.pomodoro ambiente        # pausar / reanudar los sonidos
+omarchy-shell doro.pomodoro panel           # abrir / cerrar el panel
+omarchy-shell doro.pomodoro estado          # JSON con la fase y el tiempo
+omarchy-shell doro.pomodoro probarAviso     # el aviso y la alarma de fin de pomodoro
+omarchy-shell doro.pomodoro entrar github   # google | github | discord
+omarchy-shell doro.pomodoro salir
+omarchy-shell doro.pomodoro dashboard       # abre doro.page/dashboard
+omarchy-shell doro.pomodoro unirse https://doro.page/invitacion/AB12CD34   # o el código
+omarchy-shell doro.pomodoro crearSala       # y copia el link de invitación
+omarchy-shell doro.pomodoro copiarLink
+omarchy-shell doro.pomodoro salirSala
 ```
 
 Por ejemplo, en `~/.config/hypr/bindings.conf`:
 
 ```
-bindd = SUPER ALT, P, Doro: arrancar o pausar, exec, omarchy-shell page.doro.pomodoro alternar
+bindd = SUPER ALT, P, Doro: arrancar o pausar, exec, omarchy-shell doro.pomodoro alternar
 ```
 
 ## Qué usa
@@ -153,6 +153,8 @@ El shell recarga el widget al cambiar los archivos, pero el servicio
 
 - Probar contra el Supabase real: vincular un anónimo a una cuenta nueva y la
   renovación del token con una sala abierta más de una hora.
-- Licencia: el repo de la web no tiene, hay que definirla con el desarrollador.
-- Antes de publicar: confirmar el id `page.doro.pomodoro` (no se puede cambiar
-  después) y sumar un `preview.png`.
+- Antes de publicar: sumar un `preview.png` (una captura del panel) arriba del README.
+
+## Licencia
+
+[MIT](LICENSE), © 2026 Daniel Emiliano Acevedo y Leonel Jeremias Canario.

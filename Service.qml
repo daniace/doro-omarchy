@@ -18,7 +18,7 @@ Item {
   property var shell: null
   property var manifest: null
 
-  readonly property string idPlugin: "page.doro.pomodoro"
+  readonly property string idPlugin: "doro.pomodoro"
   readonly property string carpetaEstado: (Quickshell.env("XDG_STATE_HOME") || (Quickshell.env("HOME") + "/.local/state")) + "/doro"
 
   // ---- Estado del reloj (mismos nombres que `timerStore` de la web)
@@ -361,7 +361,7 @@ Item {
 
   Component.onCompleted: crearCarpeta.running = true
 
-  // ---- IPC: `omarchy-shell page.doro.pomodoro <función>`.
+  // ---- IPC: `omarchy-shell doro.pomodoro <función>`.
   //      Abrir el panel es cosa del widget, así que se le pasa al shell, que lo
   //      rutea al monitor con foco.
 

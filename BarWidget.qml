@@ -8,11 +8,11 @@ import qs.Ui
 // Clic izquierdo abre el panel, derecho arranca o pausa, medio pasa de fase.
 BarWidget {
   id: root
-  moduleName: "page.doro.pomodoro"
+  moduleName: "doro.pomodoro"
 
   // El host puede cambiar `moduleName` por un id de instancia; el del manifest
   // es el que sirve para buscar el servicio.
-  readonly property string idPlugin: "page.doro.pomodoro"
+  readonly property string idPlugin: "doro.pomodoro"
   readonly property var reloj: bar && bar.shell && typeof bar.shell.serviceFor === "function"
     ? bar.shell.serviceFor(idPlugin)
     : null
