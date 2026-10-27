@@ -2,10 +2,10 @@
 // Supabase.js es un script de QML (`.pragma library`), así que se evalúa a mano en vez de importarlo.
 import fs from "node:fs"; import assert from "node:assert/strict";
 const src = fs.readFileSync(new URL("../Supabase.js", import.meta.url), "utf8").replace(".pragma library", "");
-const S = new Function(src + "; return {configuracion, urlEntrar, urlVincular, parsearRetorno, sesionGuardada, sesionVencida, pendientesGuardados, agregarPendiente, filasSesiones, sacarPendientes, resumen, fechaLocal};")();
+const S = new Function(src + "; return {URL_PROYECTO, ANON_KEY, configuracion, urlEntrar, urlVincular, parsearRetorno, sesionGuardada, sesionVencida, pendientesGuardados, agregarPendiente, filasSesiones, sacarPendientes, resumen, fechaLocal};")();
 
 let c = S.configuracion('{"url":"https://x.supabase.co/","anonKey":"k"}'); assert.deepEqual(c, { url: "https://x.supabase.co", anonKey: "k" });
-assert.equal(S.configuracion("basura{").url, "");
+assert.deepEqual(S.configuracion("basura{"), { url: S.URL_PROYECTO, anonKey: S.ANON_KEY });
 assert.equal(S.urlEntrar("https://x", "github"), "https://x/auth/v1/authorize?provider=github&redirect_to=doro%3A%2F%2Fauth");
 assert.ok(S.urlVincular("", "google").startsWith("/auth/v1/user/identities/authorize?provider=google&") && S.urlVincular("", "google").endsWith("&skip_http_redirect=true"));
 
@@ -47,4 +47,5 @@ assert.deepEqual(env, { url: "https://e.supabase.co", anonKey: "ke" });
 assert.deepEqual(E.configuracion('{"anonKey":"kj"}', env), { url: "https://e.supabase.co", anonKey: "kj" });
 assert.deepEqual(E.configuracion("", env), env);
 console.log("Supabase.js (.env): todo OK");
-assert.deepEqual(E.configuracionEnv(fs.readFileSync(new URL("../.env.example", import.meta.url), "utf8")), { url: "", anonKey: "" });
+// El .env.example sin completar no pisa las constantes.
+assert.deepEqual(E.configuracionEnv(fs.readFileSync(new URL("../.env.example", import.meta.url), "utf8")), E.configuracion(""));

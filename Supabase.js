@@ -14,8 +14,8 @@
 // web). Los reemplazan, en orden: el `.env` de la carpeta del plugin
 // (`DORO_SUPABASE_URL`, `DORO_SUPABASE_ANON_KEY`) y `~/.config/doro/supabase.json`
 // (`{ "url", "anonKey" }`).
-var URL_PROYECTO = ""
-var ANON_KEY = ""
+var URL_PROYECTO = "https://lqzkimyxgpklrfhiftnr.supabase.co"
+var ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxxemtpbXl4Z3BrbHJmaGlmdG5yIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjEyNDgxMjAsImV4cCI6MjA3NjgyNDEyMH0.jUR96zqZq4hkDEWllOr6s_fPd1sOO-9PHxmDcR9jj9o"
 
 /** Las variables de un `.env` (`CLAVE=valor`, con o sin comillas; `#` comenta). */
 function leerEnv(texto) {

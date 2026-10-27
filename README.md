@@ -110,11 +110,13 @@ bindd = SUPER ALT, P, Doro: arrancar o pausar, exec, omarchy-shell page.doro.pom
 - Escribe en `~/.local/state/doro/` (con permisos 700: `sesion.json` guarda los
   tokens) y, al entrar con una cuenta, el `.desktop` de `doro://`.
 - Habla con el Supabase de doro.page por HTTPS (`/auth/v1`, `/rest/v1`,
-  `/functions/v1/sumar-anonimo`) y, en una sala, por WebSocket (`/realtime/v1`). El proyecto y la clave anon (pública) salen
-  del `.env` del plugin (`DORO_SUPABASE_URL`, `DORO_SUPABASE_ANON_KEY`; ver
-  `.env.example`, `scripts/instalar-local.sh` lo copia) o de las constantes de
-  `Supabase.js`; `~/.config/doro/supabase.json` (`{ "url": "…", "anonKey": "…" }`)
-  reemplaza a los dos, por ejemplo para apuntar a un Supabase local. Sin proyecto
+  `/functions/v1/sumar-anonimo`) y, en una sala, por WebSocket (`/realtime/v1`). El proyecto y la clave anon van en las
+  constantes de `Supabase.js`: la clave es pública (es la misma que viaja en la web)
+  y lo que protege los datos son las políticas RLS. Para apuntar a otro proyecto,
+  por ejemplo un Supabase local, sirven el `.env` del plugin
+  (`DORO_SUPABASE_URL`, `DORO_SUPABASE_ANON_KEY`; ver `.env.example`,
+  `scripts/instalar-local.sh` lo copia) o `~/.config/doro/supabase.json`
+  (`{ "url": "…", "anonKey": "…" }`), que pisa a los dos. Sin proyecto
   configurado, el plugin funciona local y el panel no muestra la sección de cuenta.
 
 ## Desarrollo
@@ -149,10 +151,8 @@ El shell recarga el widget al cambiar los archivos, pero el servicio
 
 ## Pendiente
 
-- Completar `.env` (y, para quien instale con `omarchy plugin add`, las constantes
-  de `Supabase.js`) y sumar `doro://auth` a
-  las Redirect URLs del proyecto de Supabase.
-- Probar contra el Supabase real el login (vincular, cuenta existente) y Realtime.
+- Probar contra el Supabase real: vincular un anónimo a una cuenta nueva y la
+  renovación del token con una sala abierta más de una hora.
 - Licencia: el repo de la web no tiene, hay que definirla con el desarrollador.
 - Antes de publicar: confirmar el id `page.doro.pomodoro` (no se puede cambiar
   después) y sumar un `preview.png`.
