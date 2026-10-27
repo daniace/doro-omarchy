@@ -1,79 +1,57 @@
-# Doro for Omarchy
+<div align="center">
+  <img src="./assets/doro.svg" alt="Doro" width="72" />
+  <h1>Doro for Omarchy</h1>
+  <p>Real-time collaborative Pomodoro, right in your Omarchy bar — study with friends, keep the rhythm, track your progress.</p>
+
+<a href="https://doro.page"><img src="https://img.shields.io/badge/Web-doro.page-black?style=flat-square" /></a>
+<img src="https://img.shields.io/badge/Omarchy-plugin-black?style=flat-square" />
+<img src="https://img.shields.io/badge/Qt_Quick-QML-41cd52?style=flat-square&logo=qt" />
+<img src="https://img.shields.io/badge/Supabase-realtime-3ecf8e?style=flat-square&logo=supabase" />
+<a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-blue?style=flat-square" /></a>
 
 **English** · [Español](README.es.md)
 
-The [doro.page](https://doro.page) Pomodoro timer as a bar plugin for
-[Omarchy](https://omarchy.org): no browser needed.
+</div>
 
-<p>
-  <img src="screenshots/en/panel-timer.png" width="280" alt="The Doro panel">
-  <img src="screenshots/en/panel-sounds.png" width="280" alt="Ambient sounds">
-  <img src="screenshots/en/panel-in-room.png" width="280" alt="A shared room">
-</p>
+---
 
-- **In the bar:** the Doro ring, which fills up with the phase, and the time next to
-  it while a phase is running.
-  - Left click: opens the panel.
-  - Right click: starts or pauses.
-  - Middle click: skips to the next phase.
-- **In the panel:** the phase (click it to skip to the next one; the arrow switches to
-  the stopwatch), the big clock with its progress line, start/pause, reset, the
-  **times** of each phase with automatic breaks, and **ambient sounds** with a volume
-  per sound. `Enter` starts or pauses and `Esc` closes it.
-- When a phase ends, the Doro alarm plays and a notification shows up.
+The [doro.page](https://doro.page) timer as an [Omarchy](https://omarchy.org) bar plugin:
+the same account, the same rooms and the same dashboard as the web, without opening the
+browser.
 
-It behaves like the web timer: after a pomodoro comes a short break, after a break
-comes a pomodoro, and with «Start breaks automatically» the next phase starts on its
-own. The settings, the phase, the paused time and the sound mix are saved in
-`~/.local/state/doro/omarchy.json`. As on the web, a timer left running when the
-session closed comes back paused.
+## Screenshots
 
-More screenshots, in English and Spanish, are in [`screenshots/`](screenshots).
+| Timer                                       | Ambient sounds                                |
+| ------------------------------------------- | --------------------------------------------- |
+| ![Timer](./screenshots/en/panel-timer.png)  | ![Sounds](./screenshots/en/panel-sounds.png)  |
 
-## Your pomodoros on the dashboard
+| Shared room                                     | Times                                       |
+| ----------------------------------------------- | ------------------------------------------- |
+| ![Room](./screenshots/en/panel-in-room.png)     | ![Times](./screenshots/en/panel-times.png)  |
 
-Every finished pomodoro is saved to your doro.page account, just like on the web: a
-row in `study_sessions` with the configured minutes (breaks and the stopwatch don't
-count), and the dashboard adds it to your day and your streak.
+| In the bar                                                                                 |
+| ------------------------------------------------------------------------------------------ |
+| ![Running](./screenshots/en/bar-running.png) <br> ![In a room](./screenshots/en/bar-in-room.png) |
 
-- Without an account, the first finished pomodoro creates an anonymous session, as on
-  the web.
-- In the panel, **Sign in with** Google, GitHub or Discord opens the browser. It comes
-  back through `doro://auth`: the first time, the plugin registers
-  `~/.local/share/applications/doro-auth.desktop` for that scheme. If the session was
-  anonymous, the account is linked to it and keeps what you did; if the account
-  already existed, the anonymous work is added to it (`sumar-anonimo`).
-- Offline, the pomodoro waits in `~/.local/state/doro/pendientes.json` with its real
-  time and is uploaded later (when the shell starts or every 5 minutes).
-- The panel shows today's minutes and your streak, and opens the web dashboard.
+More views, in English and Spanish, are in [`screenshots/`](screenshots).
 
-## Rooms
+---
 
-The people button in the panel opens the room section: paste an invite link
-(`doro.page/invitacion/…`), its code or a room link (`doro.page/room/…`), or create a
-new room (the invite link gets copied). In a room, the panel and bar timer is
-everyone's, as on the web: anyone can start it, pause it or change its phase and
-times, and each person adds their own pomodoros to the dashboard. The bar shows the
-room icon, and when the session opens again the plugin rejoins the room it was in.
+## Features
 
-- With `qt6-websockets` installed, changes arrive instantly (Supabase Realtime).
-  Without it, the plugin checks the room every 2 seconds:
+|                                  |                                                                                   |
+| -------------------------------- | --------------------------------------------------------------------------------- |
+| ⏱ **Pomodoro and stopwatch**     | Custom focus, short and long break times, with automatic breaks                    |
+| 🤝 **Real-time rooms**           | Create or join doro.page rooms — the timer stays in sync with everyone, web included |
+| 🔥 **Streaks and stats**         | Every finished pomodoro goes to your doro.page dashboard; today and your streak in the panel |
+| 🎵 **Ambient sounds**            | 12 gapless sounds (rain, campfire, ocean, jazz…) with a volume each                |
+| 🔐 **OAuth**                     | Google · GitHub · Discord — or quick anonymous access                              |
+| 📴 **Works offline**             | Pomodoros wait in a queue with their real time and upload later                    |
+| 🎨 **Follows your theme**        | Colors, fonts and the notification icon come from the Omarchy theme                |
+| 🌐 **English and Spanish**       | Follows the system language, with an EN / ES switch                               |
+| ⌨️ **Keybindings and scripts**   | Every action is an `omarchy-shell` command                                         |
 
-  ```sh
-  sudo pacman -S qt6-websockets   # then omarchy-restart-shell
-  ```
-
-- Ambient sounds stay personal; the plugin doesn't show who's in the room or its tasks.
-
-## Language
-
-The plugin speaks English and Spanish. By default it follows the system (Spanish if
-`LANG` starts with `es`, English otherwise). To change it, use the **EN / ES** switch
-at the bottom of the panel, or:
-
-```sh
-omarchy bar set doro.pomodoro language es   # en | es
-```
+---
 
 ## Install
 
@@ -81,13 +59,79 @@ omarchy bar set doro.pomodoro language es   # en | es
 omarchy plugin add https://github.com/daniace/doro-omarchy
 ```
 
-From a terminal, Omarchy asks whether to enable it and where in the bar to put it
-(left, center or right); next to the clock is preselected (the manifest's
-`defaultSection`). With `--yes` it doesn't ask and uses that spot. To move it later:
+From a terminal, Omarchy asks whether to enable it and where in the bar to put it;
+next to the clock is preselected. With `--yes` it doesn't ask and uses that spot. To
+move it later:
 
 ```sh
 omarchy bar move doro.pomodoro --section right   # left | centerBegin | center | centerEnd | tray | right
 ```
+
+For instant updates in rooms, install the `qt6-websockets` package from the Arch
+repositories and restart the shell (`omarchy-restart-shell`). Without it, rooms still
+work by checking for changes every 2 seconds.
+
+## Uninstall
+
+```sh
+omarchy plugin remove doro.pomodoro
+```
+
+That removes the plugin and its place in the bar. What it saved outside its folder
+stays, so you can delete it by hand:
+
+- `~/.local/state/doro/` — settings, the paused timer, the session and the offline queue.
+- `~/.local/share/applications/doro-auth.desktop` and the `x-scheme-handler/doro` line
+  in `~/.config/mimeapps.list` — only if you signed in from the plugin.
+
+Your pomodoros, stats and rooms stay in your doro.page account.
+
+---
+
+## How it works
+
+**In the bar:** the Doro ring, which fills up with the phase, and the time next to it
+while a phase is running. Left click opens the panel, right click starts or pauses,
+middle click skips to the next phase.
+
+**In the panel:** the phase (click it to skip; the arrow switches to the stopwatch),
+the big clock with its progress line, start/pause, reset, **times**, **ambient
+sounds** and the **room**. `Enter` starts or pauses and `Esc` closes it. When a phase
+ends, the Doro alarm plays and a notification shows up.
+
+It behaves like the web timer: after a pomodoro comes a short break, after a break a
+pomodoro, and with «Start breaks automatically» the next phase starts on its own. A
+timer left running when the session closed comes back paused.
+
+### Your pomodoros on the dashboard
+
+Every finished pomodoro is saved to your doro.page account with its configured minutes
+(breaks and the stopwatch don't count), and the dashboard adds it to your day and your
+streak. Without an account, the first finished pomodoro creates an anonymous session,
+as on the web. **Sign in with** Google, GitHub or Discord opens the browser and comes
+back through `doro://auth`: an anonymous session gets linked to the account and keeps
+what you did; if the account already existed, the anonymous work is added to it.
+
+### Rooms
+
+The people button opens the room section: paste an invite link
+(`doro.page/invitacion/…`), its code or a room link (`doro.page/room/…`), or create a
+room (the invite link gets copied). In a room the timer is everyone's: anyone can
+start it, pause it or change its phase and times, and each person adds their own
+pomodoros to the dashboard. When the session opens again, the plugin rejoins the room
+it was in. Ambient sounds stay personal; the plugin doesn't show who's in the room or
+its tasks.
+
+### Language
+
+English or Spanish, following the system (Spanish if `LANG` starts with `es`). Change
+it with the **EN / ES** switch at the bottom of the panel, or:
+
+```sh
+omarchy bar set doro.pomodoro language es   # en | es
+```
+
+---
 
 ## Keybindings and scripts (IPC)
 
@@ -118,38 +162,51 @@ For example, in `~/.config/hypr/bindings.conf`:
 bindd = SUPER ALT, P, Doro: start or pause, exec, omarchy-shell doro.pomodoro toggle
 ```
 
-## What it uses
+---
 
-- It runs inside the `omarchy-shell` process, with no services of its own and no
-  extra permissions.
-- Sound through QtMultimedia (`qt6-multimedia`, ships with Omarchy).
-- Notifications through `omarchy-notification-send`, with the Doro logo in the theme's
-  color (`~/.local/state/doro/icono-aviso.svg`, rewritten when the theme changes).
-- It writes to `~/.local/state/doro/` (mode 700: `sesion.json` holds the tokens) and,
-  when signing in, the `doro://` `.desktop` file.
-- It talks to doro.page's Supabase over HTTPS (`/auth/v1`, `/rest/v1`,
+## What it uses and what it touches
+
+- It runs inside the `omarchy-shell` process: no services of its own, no root, no
+  installers.
+- **Network:** doro.page's Supabase over HTTPS (`/auth/v1`, `/rest/v1`,
   `/functions/v1/sumar-anonimo`) and, in a room, over WebSocket (`/realtime/v1`). The
-  project and the anon key are constants in `Supabase.js`: the key is public (the same
-  one the web ships) and what protects the data are the RLS policies. To point at
-  another project, such as a local Supabase, use the plugin's `.env`
-  (`DORO_SUPABASE_URL`, `DORO_SUPABASE_ANON_KEY`; see `.env.example`,
-  `scripts/instalar-local.sh` copies it) or `~/.config/doro/supabase.json`
-  (`{ "url": "…", "anonKey": "…" }`), which overrides both. With no project set up,
-  the plugin works offline and the panel hides the account section.
+  project and its anon key are in `Supabase.js`; the key is public (the same one the
+  web ships) and the data is protected by Supabase's row-level security.
+- **Programs:** `xdg-open` (sign-in and dashboard), `wl-copy` (copying the room link),
+  `xdg-mime` (registering `doro://`) and `omarchy-notification-send`, all included in
+  Omarchy. Optional: `qt6-websockets`.
+- **Files:** it writes to `~/.local/state/doro/` (mode 700, since `sesion.json` holds
+  the session tokens). Only when you choose to sign in, it creates
+  `~/.local/share/applications/doro-auth.desktop` and sets it as the `doro://` handler
+  in `~/.config/mimeapps.list`. Only when you change the language, it saves `language`
+  in the widget's entry in `~/.config/omarchy/shell.json` (the same as
+  `omarchy bar set`).
+- To point at another Supabase (for example a local one), use the plugin's `.env`
+  (see `.env.example`) or `~/.config/doro/supabase.json`
+  (`{ "url": "…", "anonKey": "…" }`).
+
+## Stack
+
+| Area      | Technology                                                       |
+| --------- | ---------------------------------------------------------------- |
+| UI        | QML / Qt Quick on Quickshell (`omarchy-shell`), Omarchy UI kit    |
+| Sound     | QtMultimedia, two offset players per sound for gapless loops      |
+| Backend   | Supabase (PostgreSQL + Auth + Realtime), shared with doro.page    |
+| Real time | Supabase Realtime over QtWebSockets, or polling as a fallback     |
+| Tests     | Node (the pure logic in `Model.js`, `Supabase.js` and `Textos.js`) |
 
 ## Development
 
-A separate repo from [Doro-Pomodoro](https://github.com/leonelcnr/Doro-Pomodoro) while
-the plugin matures; it doesn't touch the web repo. The code is in Spanish, like the
-web: the logic mirrors `src/store/timerStore.ts` and
-`src/features/timer/hooks/useTimerActions.ts`, and the sounds are copies of
-`public/sounds` and `src/assets/sounds` (if they change there, bring them over). The
-visible texts live in `Textos.js`.
+A separate repo from [Doro-Pomodoro](https://github.com/leonelcnr/Doro-Pomodoro), the
+web app. The code is in Spanish, like the web: the timer logic mirrors
+`src/store/timerStore.ts` and `src/features/timer/hooks/useTimerActions.ts`, and the
+sounds are copies of the web's (if they change there, bring them over). The visible
+texts live in `Textos.js`.
 
 ```sh
 scripts/instalar-local.sh      # installs from this copy; the first time it asks where it goes in the bar
-node tests/model.test.mjs      # timer and room logic tests
-node tests/supabase.test.mjs   # session, queue and summary tests
+node tests/model.test.mjs      # timer and room logic
+node tests/supabase.test.mjs   # session, queue and summary
 node tests/textos.test.mjs     # every visible text exists in English and Spanish
 qs log -p "$OMARCHY_PATH/shell" --tail 100
 ```
@@ -163,18 +220,12 @@ already open panel may keep the old version: `omarchy-restart-shell` reloads the
 | `BarWidget.qml` | The bar view (one per monitor); passes the `language` setting to the service |
 | `Panel.qml` | The panel; the sounds use the web's mixer layout |
 | `AnilloDoro.qml` | The Doro logo drawn with the theme colors |
-| `SonidoSinCortes.qml` | A gapless looping ambient sound (two offset players with a crossfade) |
+| `SonidoSinCortes.qml` | A gapless looping ambient sound |
 | `Model.js` | The pure timer logic, the same as `timerStore`, and the shared-timer logic |
 | `Nube.qml` | The doro.page session, the dashboard pomodoros (with an offline queue) and the summary |
 | `Sala.qml` | Joining, creating and leaving rooms; `timer_state` over Realtime or polling every 2 s |
 | `Supabase.js` | The pure session, OAuth callback, queue and summary logic |
 | `Textos.js` | The visible texts in English and Spanish |
-
-## To do
-
-- Test against the real Supabase: linking an anonymous session to a new account, and
-  token renewal with a room open for more than an hour.
-- Before publishing: add a `preview.png` (a screenshot of the panel) at the root.
 
 ## License
 

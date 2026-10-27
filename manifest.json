@@ -5,7 +5,7 @@
   "version": "0.1.0",
   "author": "Doro",
   "license": "MIT",
-  "description": "The doro.page Pomodoro timer in the Omarchy bar: ambient sounds, your dashboard stats and shared rooms.",
+  "description": "Real-time collaborative Pomodoro in your Omarchy bar: doro.page rooms, dashboard stats and streaks, and gapless ambient sounds. English and Spanish.",
   "kinds": [
     "service",
     "bar-widget"
