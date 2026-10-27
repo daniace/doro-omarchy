@@ -20,6 +20,10 @@ assert.equal(S.parsearRetorno("https://evil/#access_token=a&refresh_token=r", ah
 assert.equal(S.parsearRetorno("doro://auth#access_token=a", ahora).codigo, "faltan_tokens");
 assert.deepEqual(S.parsearRetorno("doro://auth#error=access_denied", ahora), { error: "access_denied", codigo: "error" });
 
+const U = new Function(src + "; return usuarioDesde;")();
+assert.equal(U({ id: "u", user_metadata: { full_name: "Ana" }, email: "a@x" }).nombre, "Ana");
+assert.equal(U({ id: "u", user_metadata: {}, identities: [{ identity_data: { full_name: "Leo" } }], email: "l@x" }).nombre, "Leo");
+assert.equal(U({ id: "u", is_anonymous: true }).nombre, ""); assert.equal(U({ id: "u", email: "e@x" }).nombre, "e@x");
 assert.equal(S.sesionGuardada("null"), null); assert.equal(S.sesionGuardada('{"access_token":1}'), null);
 const s = S.sesionGuardada('{"access_token":"a","refresh_token":"r","expires_at":5000,"usuario":{"id":"u","anonimo":true}}');
 assert.equal(s.usuario.id, "u");

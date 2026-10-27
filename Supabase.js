@@ -142,11 +142,15 @@ function sesionDesdeRespuesta(datos, ahora) {
 function usuarioDesde(user) {
   if (!user || !user.id) return null
   var meta = user.user_metadata || {}
-  return {
-    id: user.id,
-    anonimo: !!user.is_anonymous,
-    nombre: meta.full_name || meta.name || meta.user_name || meta.preferred_username || user.email || ""
+  // Al vincular una cuenta a una sesión anónima, el nombre queda en la identidad
+  // del proveedor y no en `user_metadata`.
+  var identidades = Array.isArray(user.identities) ? user.identities : []
+  var nombre = meta.full_name || meta.name || meta.user_name || meta.preferred_username || ""
+  for (var i = 0; !nombre && i < identidades.length; i++) {
+    var datos = identidades[i].identity_data || {}
+    nombre = datos.full_name || datos.name || datos.user_name || datos.preferred_username || ""
   }
+  return { id: user.id, anonimo: !!user.is_anonymous, nombre: nombre || user.email || "" }
 }
 
 /** Sesión guardada en `sesion.json`, o null si no sirve. */

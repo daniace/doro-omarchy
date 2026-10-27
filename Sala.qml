@@ -239,6 +239,7 @@ Item {
   function cerrarRealtime() {
     enVivo = false
     reconexion.stop()
+    esperaLatido.stop()
     if (!socket) return
     var viejo = socket
     socket = null
@@ -270,6 +271,11 @@ Item {
     } catch (e) {
       return
     }
+    // La respuesta al latido: la conexión sigue viva.
+    if (mensaje.topic === "phoenix" && mensaje.ref === refLatido) {
+      esperaLatido.stop()
+      return
+    }
     if (mensaje.topic !== tema()) return
     var payload = mensaje.payload || {}
 
@@ -298,12 +304,29 @@ Item {
     onTriggered: if (root.unida && !root.enVivo) root.abrirRealtime()
   }
 
+  // El latido de Phoenix: sin él, el servidor corta a los 60 segundos. Además
+  // es la forma de notar una conexión muerta en silencio (sin red, después de
+  // suspender): si no responde, se vuelve a las consultas y se reconecta.
+  property string refLatido: ""
+
   Timer {
-    // El latido de Phoenix: sin él, el servidor corta a los 60 segundos.
     interval: 25000
     repeat: true
     running: root.enVivo
-    onTriggered: root.enviar({ topic: "phoenix", event: "heartbeat", payload: {} })
+    onTriggered: {
+      root.enviar({ topic: "phoenix", event: "heartbeat", payload: {} })
+      root.refLatido = String(root.ref)
+      esperaLatido.restart()
+    }
+  }
+
+  Timer {
+    id: esperaLatido
+    interval: 10000
+    onTriggered: {
+      console.warn("Doro: Realtime no respondió el latido; reconectando")
+      root.abrirRealtime()
+    }
   }
 
   Timer {
