@@ -110,7 +110,9 @@ Every finished pomodoro is saved to your doro.page account with its configured m
 streak. Without an account, the first finished pomodoro creates an anonymous session,
 as on the web. **Sign in with** Google, GitHub or Discord opens the browser and comes
 back through `doro://auth`: an anonymous session gets linked to the account and keeps
-what you did; if the account already existed, the anonymous work is added to it.
+what you did; if the account already existed, the anonymous work is added to it. Sign-in
+uses OAuth with PKCE: the browser hands back a one-time code that only the shell that
+started the sign-in can redeem, so a `doro://auth` link opened by anyone else does nothing.
 
 ### Rooms
 

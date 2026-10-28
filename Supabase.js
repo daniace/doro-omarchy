@@ -73,16 +73,106 @@ function esProveedor(proveedor) {
   return PROVEEDORES.indexOf(proveedor) !== -1
 }
 
-/** Entrar con OAuth (flujo implícito: los tokens vuelven en el fragmento de `doro://auth`). */
-function urlEntrar(base, proveedor) {
+// ---- PKCE
+//
+// Entrar es OAuth con PKCE, como supabase-js con `flowType: "pkce"`: `doro://auth`
+// vuelve con un `code` de un solo uso que solo se canjea con el verificador que
+// quedó en memoria. Así la vuelta no trae tokens (que quedarían en el argv del
+// `.desktop`) y una vuelta que no empezó este reloj no sirve de nada.
+
+/** El verificador (RFC 7636): 64 caracteres hex de 32 bytes aleatorios (`/dev/urandom`). */
+function verificadorDesde(azar) {
+  var hex = String(azar || "").replace(/\s+/g, "").toLowerCase()
+  return /^[0-9a-f]{64}$/.test(hex) ? hex : ""
+}
+
+/** El `code_challenge` S256: SHA-256 del verificador, en base64url sin relleno. */
+function desafio(verificador) {
+  var bytes = sha256(bytesAscii(verificador))
+  var tabla = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_"
+  var salida = ""
+  for (var i = 0; i < bytes.length; i += 3) {
+    var n = (bytes[i] << 16) | ((bytes[i + 1] || 0) << 8) | (bytes[i + 2] || 0)
+    salida += tabla[(n >> 18) & 63] + tabla[(n >> 12) & 63]
+    if (i + 1 < bytes.length) salida += tabla[(n >> 6) & 63]
+    if (i + 2 < bytes.length) salida += tabla[n & 63]
+  }
+  return salida
+}
+
+function bytesAscii(texto) {
+  var bytes = []
+  for (var i = 0; i < texto.length; i++) bytes.push(texto.charCodeAt(i) & 0xff)
+  return bytes
+}
+
+// QML no trae `crypto.subtle`: SHA-256 (FIPS 180-4) a mano, sobre un array de bytes.
+var K_SHA256 = [
+  0x428a2f98, 0x71374491, 0xb5c0fbcf, 0xe9b5dba5, 0x3956c25b, 0x59f111f1, 0x923f82a4, 0xab1c5ed5,
+  0xd807aa98, 0x12835b01, 0x243185be, 0x550c7dc3, 0x72be5d74, 0x80deb1fe, 0x9bdc06a7, 0xc19bf174,
+  0xe49b69c1, 0xefbe4786, 0x0fc19dc6, 0x240ca1cc, 0x2de92c6f, 0x4a7484aa, 0x5cb0a9dc, 0x76f988da,
+  0x983e5152, 0xa831c66d, 0xb00327c8, 0xbf597fc7, 0xc6e00bf3, 0xd5a79147, 0x06ca6351, 0x14292967,
+  0x27b70a85, 0x2e1b2138, 0x4d2c6dfc, 0x53380d13, 0x650a7354, 0x766a0abb, 0x81c2c92e, 0x92722c85,
+  0xa2bfe8a1, 0xa81a664b, 0xc24b8b70, 0xc76c51a3, 0xd192e819, 0xd6990624, 0xf40e3585, 0x106aa070,
+  0x19a4c116, 0x1e376c08, 0x2748774c, 0x34b0bcb5, 0x391c0cb3, 0x4ed8aa4a, 0x5b9cca4f, 0x682e6ff3,
+  0x748f82ee, 0x78a5636f, 0x84c87814, 0x8cc70208, 0x90befffa, 0xa4506ceb, 0xbef9a3f7, 0xc67178f2
+]
+
+function sha256(entrada) {
+  var bytes = entrada.slice()
+  var bits = bytes.length * 8
+  bytes.push(0x80)
+  while (bytes.length % 64 !== 56) bytes.push(0)
+  // Largo en bits, big-endian en 64 bits (los mensajes de acá caben en 32).
+  bytes.push(0, 0, 0, 0, (bits >>> 24) & 0xff, (bits >>> 16) & 0xff, (bits >>> 8) & 0xff, bits & 0xff)
+
+  var h = [0x6a09e667, 0xbb67ae85, 0x3c6ef372, 0xa54ff53a, 0x510e527f, 0x9b05688c, 0x1f83d9ab, 0x5be0cd19]
+  var rotar = function(x, n) { return (x >>> n) | (x << (32 - n)) }
+  var w = new Array(64)
+  for (var bloque = 0; bloque < bytes.length; bloque += 64) {
+    for (var i = 0; i < 16; i++) {
+      var j = bloque + i * 4
+      w[i] = (bytes[j] << 24) | (bytes[j + 1] << 16) | (bytes[j + 2] << 8) | bytes[j + 3]
+    }
+    for (i = 16; i < 64; i++) {
+      var s0 = rotar(w[i - 15], 7) ^ rotar(w[i - 15], 18) ^ (w[i - 15] >>> 3)
+      var s1 = rotar(w[i - 2], 17) ^ rotar(w[i - 2], 19) ^ (w[i - 2] >>> 10)
+      w[i] = (w[i - 16] + s0 + w[i - 7] + s1) | 0
+    }
+    var a = h[0], b = h[1], c = h[2], d = h[3], e = h[4], f = h[5], g = h[6], hh = h[7]
+    for (i = 0; i < 64; i++) {
+      var t1 = (hh + (rotar(e, 6) ^ rotar(e, 11) ^ rotar(e, 25)) + ((e & f) ^ (~e & g)) + K_SHA256[i] + w[i]) | 0
+      var t2 = ((rotar(a, 2) ^ rotar(a, 13) ^ rotar(a, 22)) + ((a & b) ^ (a & c) ^ (b & c))) | 0
+      hh = g; g = f; f = e; e = (d + t1) | 0; d = c; c = b; b = a; a = (t1 + t2) | 0
+    }
+    h = [(h[0] + a) | 0, (h[1] + b) | 0, (h[2] + c) | 0, (h[3] + d) | 0,
+         (h[4] + e) | 0, (h[5] + f) | 0, (h[6] + g) | 0, (h[7] + hh) | 0]
+  }
+
+  var salida = []
+  for (i = 0; i < 8; i++) salida.push((h[i] >>> 24) & 0xff, (h[i] >>> 16) & 0xff, (h[i] >>> 8) & 0xff, h[i] & 0xff)
+  return salida
+}
+
+function parametrosPkce(verificador) {
+  return "&code_challenge=" + desafio(verificador) + "&code_challenge_method=s256"
+}
+
+/** Entrar con OAuth: vuelve a `doro://auth?code=…`. */
+function urlEntrar(base, proveedor, verificador) {
   return base + "/auth/v1/authorize?provider=" + encodeURIComponent(proveedor) +
-    "&redirect_to=" + encodeURIComponent(REDIRECCION)
+    "&redirect_to=" + encodeURIComponent(REDIRECCION) + parametrosPkce(verificador)
 }
 
 /** Vincular una cuenta a la sesión anónima (`linkIdentity`): devuelve `{ url }` en JSON. */
-function urlVincular(base, proveedor) {
+function urlVincular(base, proveedor, verificador) {
   return base + "/auth/v1/user/identities/authorize?provider=" + encodeURIComponent(proveedor) +
-    "&redirect_to=" + encodeURIComponent(REDIRECCION) + "&skip_http_redirect=true"
+    "&redirect_to=" + encodeURIComponent(REDIRECCION) + "&skip_http_redirect=true" + parametrosPkce(verificador)
+}
+
+/** El cuerpo de `POST /auth/v1/token?grant_type=pkce`. */
+function canjePkce(codigo, verificador) {
+  return { auth_code: codigo, code_verifier: verificador }
 }
 
 function parametros(texto) {
@@ -104,14 +194,14 @@ function parametros(texto) {
 }
 
 /**
- * Lee la vuelta del OAuth (`doro://auth?…#…`). Devuelve
- * `{ tokens: { access_token, refresh_token, expires_at } }` o
- * `{ error, codigo }`: `codigo` es el `error_code` de Supabase (que pone los errores
- * en la query o en el fragmento), `retorno_invalido` o `faltan_tokens`; `error`, su
- * descripción si la trae.
+ * Lee la vuelta del OAuth (`doro://auth?code=…`). Devuelve `{ autorizacion }` (el
+ * `code` a canjear) o `{ error, codigo }`: `codigo` es el `error_code` de Supabase
+ * (que pone los errores en la query o en el fragmento), `retorno_invalido` o
+ * `falta_codigo`; `error`, su descripción si la trae (solo para el log: viene de la
+ * URL y la puede escribir cualquiera). Tokens sueltos en la URL no se aceptan.
  */
-function parsearRetorno(url, ahora) {
-  if (typeof url !== "string" || url.indexOf(REDIRECCION) !== 0)
+function parsearRetorno(url) {
+  if (typeof url !== "string" || url.indexOf(REDIRECCION) !== 0 || !/^($|[/?#])/.test(url.slice(REDIRECCION.length)))
     return { error: "", codigo: "retorno_invalido" }
   var resto = url.slice(REDIRECCION.length)
   var numeral = resto.indexOf("#")
@@ -121,9 +211,9 @@ function parsearRetorno(url, ahora) {
 
   if (datos.error || datos.error_code)
     return { error: datos.error_description || datos.error || "", codigo: datos.error_code || "error" }
-  if (!datos.access_token || !datos.refresh_token)
-    return { error: "", codigo: "faltan_tokens" }
-  return { tokens: sesionDesdeRespuesta(datos, ahora) }
+  if (!datos.code)
+    return { error: "", codigo: "falta_codigo" }
+  return { autorizacion: datos.code }
 }
 
 /** Normaliza la sesión de `/signup`, `/token` o la vuelta del OAuth. */

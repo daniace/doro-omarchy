@@ -91,7 +91,9 @@ var TEXTOS = {
     "aviso.tuCuenta": "your account",
     "aviso.fusionFallida": "Couldn't move your anonymous pomodoros to your account.",
     "aviso.retornoInvalido": "That isn't a Doro sign-in link.",
-    "aviso.faltanTokens": "The sign-in came back without a session."
+    "aviso.faltanTokens": "The sign-in came back without a session.",
+    "aviso.proveedorRechazo": "The provider didn't complete the sign-in.",
+    "aviso.sinAzar": "Couldn't prepare a secure sign-in."
   },
 
   es: {
@@ -175,7 +177,9 @@ var TEXTOS = {
     "aviso.tuCuenta": "tu cuenta",
     "aviso.fusionFallida": "No se pudieron pasar los pomodoros anónimos a tu cuenta.",
     "aviso.retornoInvalido": "No es una vuelta de inicio de sesión de Doro.",
-    "aviso.faltanTokens": "El inicio de sesión volvió sin sesión."
+    "aviso.faltanTokens": "El inicio de sesión volvió sin sesión.",
+    "aviso.proveedorRechazo": "El proveedor no completó el inicio de sesión.",
+    "aviso.sinAzar": "No se pudo preparar un inicio de sesión seguro."
   }
 }
 

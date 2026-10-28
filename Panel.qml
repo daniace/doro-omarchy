@@ -784,7 +784,8 @@ Panel {
                   hoverColor: root.texto
                   fontFamily: root.fuente
                   fontSize: Style.font.body
-                  onClicked: root.nube.entrar(modelData.id)
+                  // Se cierra para que se vea el navegador que se abre.
+                  onClicked: { root.nube.entrar(modelData.id); root.close() }
                 }
               }
             }
