@@ -39,9 +39,13 @@ Item {
   property bool pidiendoSesion: false
   property var esperandoSesion: []
 
+  // El inicio de sesión en curso, `{ verificador, proveedor, vence }`: solo en
+  // memoria y de un solo uso. Una vuelta por `doro://auth` sin él se ignora.
+  property var flujo: null
+  readonly property int vigenciaFlujo: 10 * 60 * 1000
+
   // Entrar a una cuenta que ya existía desde una sesión anónima: se guarda el
   // token del anónimo para que `sumar-anonimo` pase lo hecho a la cuenta.
-  property string proveedorEnCurso: ""
   property string tokenAnonimoPorFusionar: ""
 
   function cargar() {
@@ -143,47 +147,67 @@ Item {
     archivoSesion.setText(JSON.stringify(nueva, null, 2) + "\n")
   }
 
+  // Un segundo clic mientras se prepara el primero lo reemplaza: abre una sola
+  // pestaña, con el proveedor del último.
   function entrar(proveedor) {
     if (!configurada || !Supabase.esProveedor(proveedor)) return
-    proveedorEnCurso = proveedor
     instalarManejador(function() {
-      if (!usuario || !usuario.anonimo) {
+      pedirAzar(function(verificador) {
+        if (!verificador) {
+          console.warn("Doro: no se pudo leer /dev/urandom para entrar")
+          root.aviso(t("aviso.noSePudoEntrar"), t("aviso.sinAzar"))
+          return
+        }
+        flujo = { verificador: verificador, proveedor: proveedor, vence: Date.now() + vigenciaFlujo }
         tokenAnonimoPorFusionar = ""
-        return abrir(Supabase.urlEntrar(conf.url, proveedor))
-      }
-      // Anónimo: se le vincula la cuenta y conserva su id, como `linkIdentity`.
-      pedirConSesion("GET", Supabase.urlVincular("", proveedor), null, null, false, function(estado, datos) {
-        if (estado === 200 && datos && datos.url) abrir(datos.url)
-        else abrir(Supabase.urlEntrar(conf.url, proveedor))
+        if (!usuario || !usuario.anonimo) return abrir(Supabase.urlEntrar(conf.url, proveedor, verificador))
+        // Anónimo: se le vincula la cuenta y conserva su id, como `linkIdentity`.
+        pedirConSesion("GET", Supabase.urlVincular("", proveedor, verificador), null, null, false, function(estado, datos) {
+          if (estado === 200 && datos && datos.url) abrir(datos.url)
+          else abrir(Supabase.urlEntrar(conf.url, proveedor, verificador))
+        })
       })
     })
   }
 
-  // La vuelta del navegador por `doro://auth` (IPC `authCallback`).
+  // La vuelta del navegador por `doro://auth` (IPC `authCallback`). Cualquier
+  // proceso o página puede mandarla, así que sin un inicio de sesión en curso no
+  // hace nada, y el texto que trae nunca llega a un aviso.
   function recibirRetorno(url) {
-    var retorno = Supabase.parsearRetorno(url, Date.now())
-    if (!retorno.tokens) {
+    var enCurso = flujo && Date.now() < flujo.vence ? flujo : null
+    if (!enCurso) {
+      flujo = null
+      console.warn("Doro: vuelta de doro://auth sin un inicio de sesión en curso; se ignora")
+      return
+    }
+    var retorno = Supabase.parsearRetorno(url)
+    if (!retorno.autorizacion) {
       // La cuenta ya existía: se entra a ella y después se le suma el anónimo.
-      if (retorno.codigo === "identity_already_exists" && usuario && usuario.anonimo && proveedorEnCurso) {
+      if (retorno.codigo === "identity_already_exists" && usuario && usuario.anonimo) {
         tokenAnonimoPorFusionar = sesion.access_token
-        abrir(Supabase.urlEntrar(conf.url, proveedorEnCurso))
+        abrir(Supabase.urlEntrar(conf.url, enCurso.proveedor, enCurso.verificador))
         return
       }
-      var motivos = { retorno_invalido: "aviso.retornoInvalido", faltan_tokens: "aviso.faltanTokens" }
-      root.aviso(t("aviso.noSePudoEntrar"), motivos[retorno.codigo] ? t(motivos[retorno.codigo]) : retorno.error)
+      flujo = null
+      tokenAnonimoPorFusionar = ""
+      if (retorno.error) console.warn("Doro: el inicio de sesión volvió con", retorno.codigo + ":", retorno.error)
+      var motivos = { retorno_invalido: "aviso.retornoInvalido", falta_codigo: "aviso.faltanTokens" }
+      root.aviso(t("aviso.noSePudoEntrar"), t(motivos[retorno.codigo] || "aviso.proveedorRechazo"))
       return
     }
 
-    var tokens = retorno.tokens
-    pedir("GET", "/auth/v1/user", null, tokens.access_token, null, function(estado, datos) {
-      var nuevoUsuario = estado === 200 ? Supabase.usuarioDesde(datos) : null
-      if (!nuevoUsuario) {
+    // De un solo uso: el código se canjea una vez, salga como salga.
+    flujo = null
+    pedir("POST", "/auth/v1/token?grant_type=pkce", Supabase.canjePkce(retorno.autorizacion, enCurso.verificador),
+      null, null, function(estado, datos) {
+      var nueva = estado === 200 && datos && datos.access_token ? Supabase.sesionDesdeRespuesta(datos, Date.now()) : null
+      if (!nueva || !nueva.usuario) {
+        tokenAnonimoPorFusionar = ""
         root.aviso(t("aviso.noSePudoEntrar"), t("aviso.sesionNoReconocida"))
         return
       }
-      tokens.usuario = nuevoUsuario
-      establecerSesion(tokens)
-      proveedorEnCurso = ""
+      var nuevoUsuario = nueva.usuario
+      establecerSesion(nueva)
       root.aviso("Doro", t("aviso.entraste", { nombre: nuevoUsuario.nombre || t("aviso.tuCuenta") }))
 
       var tokenAnonimo = tokenAnonimoPorFusionar
@@ -204,8 +228,27 @@ Item {
       })
   }
 
+  // Se cierra acá enseguida y, aparte, en Supabase (`scope=local`: solo esta
+  // sesión, la web sigue), para que el refresh token deje de servir.
   function salir() {
+    var anterior = sesion
+    flujo = null
+    tokenAnonimoPorFusionar = ""
     establecerSesion(null)
+    if (anterior) cerrarEnServidor(anterior)
+  }
+
+  function cerrarEnServidor(anterior) {
+    var cerrar = function(token) {
+      pedir("POST", "/auth/v1/logout?scope=local", null, token, null, function(estado) {
+        if (estado >= 300) console.warn("Doro: logout respondió", estado)
+      })
+    }
+    if (!Supabase.sesionVencida(anterior, Date.now())) return cerrar(anterior.access_token)
+    pedir("POST", "/auth/v1/token?grant_type=refresh_token", { refresh_token: anterior.refresh_token }, null, null,
+      function(estado, datos) {
+        if (estado === 200 && datos && datos.access_token) cerrar(datos.access_token)
+      })
   }
 
   function alCambiarSesion() {
@@ -297,12 +340,36 @@ Item {
       'd="${XDG_DATA_HOME:-$HOME/.local/share}/applications"; mkdir -p "$d" && ' +
       'printf "%s\\n" "[Desktop Entry]" "Type=Application" "Name=Doro (sign-in)" "NoDisplay=true" ' +
       '"Exec=omarchy-shell doro.pomodoro authCallback %u" "MimeType=x-scheme-handler/doro;" > "$d/doro-auth.desktop" && ' +
-      'xdg-mime default doro-auth.desktop x-scheme-handler/doro']
+      'xdg-mime default doro-auth.desktop x-scheme-handler/doro && ' +
+      // El navegador abre `doro://` por el portal, que solo ve las apps del caché.
+      '{ update-desktop-database "$d" 2>/dev/null || true; }']
     onExited: function(codigo) {
       if (codigo !== 0) console.warn("Doro: no se pudo registrar doro://", codigo)
       var cb = root.alInstalarManejador
       root.alInstalarManejador = null
       if (cb) cb()
+    }
+  }
+
+  // El verificador de PKCE: 32 bytes de `/dev/urandom` (QML no trae
+  // `crypto.getRandomValues` y `Math.random` no sirve para esto).
+  property var alTenerAzar: null
+
+  function pedirAzar(cb) {
+    alTenerAzar = cb
+    azar.running = true
+  }
+
+  Process {
+    id: azar
+    command: ["od", "-An", "-vtx1", "-N32", "/dev/urandom"]
+    stdout: StdioCollector {
+      waitForEnd: true
+      onStreamFinished: {
+        var cb = root.alTenerAzar
+        root.alTenerAzar = null
+        if (cb) cb(Supabase.verificadorDesde(text))
+      }
     }
   }
 

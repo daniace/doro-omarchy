@@ -112,7 +112,9 @@ configurados (los descansos y el cronómetro no cuentan), y el dashboard lo suma
 y a tu racha. Sin cuenta, el primer pomodoro terminado crea una sesión anónima, como en
 la web. **Entrar con** Google, GitHub o Discord abre el navegador y vuelve por
 `doro://auth`: una sesión anónima se vincula a la cuenta y conserva lo hecho; si la
-cuenta ya existía, lo anónimo se le suma.
+cuenta ya existía, lo anónimo se le suma. Se entra con OAuth y PKCE: el navegador
+devuelve un código de un solo uso que solo puede canjear el shell que empezó el inicio de
+sesión, así que un link `doro://auth` que abra otro no hace nada.
 
 ### Salas
 

@@ -1,24 +1,42 @@
 // Pruebas de la lógica pura de la conexión con doro.page (Supabase.js). Correr con: node tests/supabase.test.mjs
 // Supabase.js es un script de QML (`.pragma library`), así que se evalúa a mano en vez de importarlo.
-import fs from "node:fs"; import assert from "node:assert/strict";
+import fs from "node:fs"; import assert from "node:assert/strict"; import crypto from "node:crypto";
 const src = fs.readFileSync(new URL("../Supabase.js", import.meta.url), "utf8").replace(".pragma library", "");
-const S = new Function(src + "; return {URL_PROYECTO, ANON_KEY, configuracion, urlEntrar, urlVincular, parsearRetorno, sesionGuardada, sesionVencida, pendientesGuardados, agregarPendiente, filasSesiones, sacarPendientes, resumen, fechaLocal};")();
+const S = new Function(src + "; return {URL_PROYECTO, ANON_KEY, configuracion, verificadorDesde, desafio, sha256, canjePkce, urlEntrar, urlVincular, parsearRetorno, sesionDesdeRespuesta, sesionGuardada, sesionVencida, pendientesGuardados, agregarPendiente, filasSesiones, sacarPendientes, resumen, fechaLocal};")();
 
 let c = S.configuracion('{"url":"https://x.supabase.co/","anonKey":"k"}'); assert.deepEqual(c, { url: "https://x.supabase.co", anonKey: "k" });
 assert.deepEqual(S.configuracion("basura{"), { url: S.URL_PROYECTO, anonKey: S.ANON_KEY });
-assert.equal(S.urlEntrar("https://x", "github"), "https://x/auth/v1/authorize?provider=github&redirect_to=doro%3A%2F%2Fauth");
-assert.ok(S.urlVincular("", "google").startsWith("/auth/v1/user/identities/authorize?provider=google&") && S.urlVincular("", "google").endsWith("&skip_http_redirect=true"));
+// PKCE: el SHA-256 a mano coincide con el de Node, y el desafío S256 es su base64url.
+for (const texto of ["", "abc", "a".repeat(55), "a".repeat(56), "a".repeat(64), "a".repeat(200)])
+  assert.deepEqual(S.sha256([...Buffer.from(texto)]), [...crypto.createHash("sha256").update(texto).digest()], texto.length + " bytes");
+const azar = "a1 b2 c3 d4 e5 f6 07 18 29 3a 4b 5c 6d 7e 8f 90\n 01 12 23 34 45 56 67 78 89 9a ab bc cd de ef f0\n";
+const verificador = S.verificadorDesde(azar);
+assert.equal(verificador, "a1b2c3d4e5f60718293a4b5c6d7e8f90" + "0112233445566778899aabbccddeeff0");
+assert.equal(S.desafio(verificador), crypto.createHash("sha256").update(verificador).digest("base64url"));
+assert.equal(S.verificadorDesde(""), ""); assert.equal(S.verificadorDesde("a1 b2"), ""); assert.equal(S.verificadorDesde("zz".repeat(32)), "");
+assert.deepEqual(S.canjePkce("c", verificador), { auth_code: "c", code_verifier: verificador });
+
+const pkce = "&code_challenge=" + S.desafio(verificador) + "&code_challenge_method=s256";
+assert.equal(S.urlEntrar("https://x", "github", verificador), "https://x/auth/v1/authorize?provider=github&redirect_to=doro%3A%2F%2Fauth" + pkce);
+assert.equal(S.urlVincular("", "google", verificador), "/auth/v1/user/identities/authorize?provider=google&redirect_to=doro%3A%2F%2Fauth&skip_http_redirect=true" + pkce);
+
+// La vuelta trae un código para canjear; tokens sueltos en la URL ya no sirven.
+assert.deepEqual(S.parsearRetorno("doro://auth?code=c%2D1"), { autorizacion: "c-1" });
+assert.deepEqual(S.parsearRetorno("doro://auth/?code=c"), { autorizacion: "c" });
+assert.equal(S.parsearRetorno("doro://auth#access_token=a&refresh_token=r&expires_in=3600").codigo, "falta_codigo");
+assert.equal(S.parsearRetorno("doro://auth").codigo, "falta_codigo");
+let r = S.parsearRetorno("doro://auth?error=server_error&error_code=identity_already_exists&error_description=Identity+is+already+linked");
+assert.deepEqual(r, { error: "Identity is already linked", codigo: "identity_already_exists" });
+r = S.parsearRetorno("doro://auth/#error=access_denied"); assert.equal(r.error, "access_denied");
+assert.deepEqual(S.parsearRetorno("doro://auth#error=access_denied"), { error: "access_denied", codigo: "error" });
+// Solo `doro://auth` exacto: ni otro esquema ni otro host que empiece igual.
+for (const url of ["https://evil/?code=c", "doro://auth.evil.example/?code=c", "doro://authx?code=c", "doro://auth@evil/?code=c", "xdoro://auth?code=c", null])
+  assert.equal(S.parsearRetorno(url).codigo, "retorno_invalido", String(url));
 
 const ahora = 1_000_000_000_000;
-let r = S.parsearRetorno("doro://auth#access_token=a%2Eb&expires_in=3600&refresh_token=r&token_type=bearer", ahora);
-assert.deepEqual(r.tokens, { access_token: "a.b", refresh_token: "r", expires_at: ahora + 3600_000, usuario: null });
-r = S.parsearRetorno("doro://auth#access_token=a&refresh_token=r&expires_at=2000000000", ahora); assert.equal(r.tokens.expires_at, 2_000_000_000_000);
-r = S.parsearRetorno("doro://auth?error=server_error&error_code=identity_already_exists&error_description=Identity+is+already+linked", ahora);
-assert.deepEqual(r, { error: "Identity is already linked", codigo: "identity_already_exists" });
-r = S.parsearRetorno("doro://auth/#error=access_denied", ahora); assert.equal(r.error, "access_denied");
-assert.equal(S.parsearRetorno("https://evil/#access_token=a&refresh_token=r", ahora).codigo, "retorno_invalido");
-assert.equal(S.parsearRetorno("doro://auth#access_token=a", ahora).codigo, "faltan_tokens");
-assert.deepEqual(S.parsearRetorno("doro://auth#error=access_denied", ahora), { error: "access_denied", codigo: "error" });
+const t = S.sesionDesdeRespuesta({ access_token: "a", refresh_token: "r", expires_in: 3600, user: { id: "u", is_anonymous: false, email: "e@x" } }, ahora);
+assert.deepEqual(t, { access_token: "a", refresh_token: "r", expires_at: ahora + 3600_000, usuario: { id: "u", anonimo: false, nombre: "e@x" } });
+assert.equal(S.sesionDesdeRespuesta({ access_token: "a", refresh_token: "r", expires_at: 2000000000 }, ahora).expires_at, 2_000_000_000_000);
 
 const U = new Function(src + "; return usuarioDesde;")();
 assert.equal(U({ id: "u", user_metadata: { full_name: "Ana" }, email: "a@x" }).nombre, "Ana");
